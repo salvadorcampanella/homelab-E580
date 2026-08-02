@@ -1,0 +1,100 @@
+# PhotoPrism - Personal and Shared Instances
+networks:
+  proxy-nw:
+    external: true
+
+# ---------------------------------------------------------------------------
+# GPU / Hardware-acceleration anchor — Intel UHD 620 (QuickSync / VAAPI)
+# ---------------------------------------------------------------------------
+x-gpu-access: &gpu-access
+  devices:
+    - /dev/dri/renderD128:/dev/dri/renderD128
+    - /dev/dri/card1:/dev/dri/card1
+  group_add:
+    - "44"   # video
+    - "992"  # render
+
+services:
+  photoprism-db:
+    image: mariadb:11.4
+    container_name: photoprism-db
+    restart: unless-stopped
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    command: mysqld --transaction-isolation=READ-COMMITTED --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --max-connections=512 --innodb-rollback-on-timeout=OFF --innodb-lock-wait-timeout=120
+    environment:
+      MARIADB_ROOT_PASSWORD: ${PHOTOPRISM_DB_ROOT_PASSWORD}
+      MARIADB_USER: ${PHOTOPRISM_DB_USER:-photoprism}
+      MARIADB_PASSWORD: ${PHOTOPRISM_DB_PASSWORD}
+    volumes:
+      - ${DOCKER_DATA_PATH}/photoprism/mysql:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - proxy-nw
+
+  photoprism-personal:
+    image: photoprism/photoprism:latest
+    container_name: photoprism-personal
+    restart: unless-stopped
+    depends_on:
+      - photoprism-db
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    <<: *gpu-access
+    environment:
+      PHOTOPRISM_FFMPEG_ENCODER: "intel"
+      PHOTOPRISM_INIT: "intel"
+      PHOTOPRISM_UID: 1000
+      PHOTOPRISM_GID: 1000
+      PHOTOPRISM_ADMIN_USER: ${PHOTOPRISM_PERSONAL_ADMIN_USER:-admin}
+      PHOTOPRISM_ADMIN_PASSWORD: ${PHOTOPRISM_PERSONAL_ADMIN_PASSWORD}
+      PHOTOPRISM_AUTH_MODE: "password"
+      PHOTOPRISM_SITE_URL: "http://fotos.casita.local"
+      PHOTOPRISM_ORIGINALS_LIMIT: 5000
+      PHOTOPRISM_HTTP_COMPRESSION: "gzip"
+      PHOTOPRISM_DATABASE_DRIVER: "mysql"
+      PHOTOPRISM_DATABASE_SERVER: "photoprism-db:3306"
+      PHOTOPRISM_DATABASE_NAME: "photoprism_personal"
+      PHOTOPRISM_DATABASE_USER: "${PHOTOPRISM_DB_USER:-photoprism}"
+      PHOTOPRISM_DATABASE_PASSWORD: "${PHOTOPRISM_DB_PASSWORD}"
+      PHOTOPRISM_SITE_TITLE: "Personal Photos"
+    volumes:
+      - /mnt/ev_deluxe/originals:/photoprism/originals:ro
+      - ${DOCKER_DATA_PATH}/photoprism/personal-storage:/photoprism/storage
+    networks:
+      - proxy-nw
+
+  photoprism-compartido:
+    image: photoprism/photoprism:latest
+    container_name: photoprism-compartido
+    restart: unless-stopped
+    depends_on:
+      - photoprism-db
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    <<: *gpu-access
+    environment:
+      PHOTOPRISM_FFMPEG_ENCODER: "intel"
+      PHOTOPRISM_INIT: "intel"
+      PHOTOPRISM_UID: 1000
+      PHOTOPRISM_GID: 1000
+      PHOTOPRISM_ADMIN_USER: ${PHOTOPRISM_COMPARTIDO_ADMIN_USER:-admin}
+      PHOTOPRISM_ADMIN_PASSWORD: ${PHOTOPRISM_COMPARTIDO_ADMIN_PASSWORD}
+      PHOTOPRISM_AUTH_MODE: "password"
+      PHOTOPRISM_SITE_URL: "http://familia.casita.local"
+      PHOTOPRISM_ORIGINALS_LIMIT: 5000
+      PHOTOPRISM_HTTP_COMPRESSION: "gzip"
+      PHOTOPRISM_DATABASE_DRIVER: "mysql"
+      PHOTOPRISM_DATABASE_SERVER: "photoprism-db:3306"
+      PHOTOPRISM_DATABASE_NAME: "photoprism_compartido"
+      PHOTOPRISM_DATABASE_USER: "${PHOTOPRISM_DB_USER:-photoprism}"
+      PHOTOPRISM_DATABASE_PASSWORD: "${PHOTOPRISM_DB_PASSWORD}"
+      PHOTOPRISM_SITE_TITLE: "Family Photos"
+    volumes:
+      - /mnt/ev_deluxe/originals/0-compartido:/photoprism/originals:ro
+      - ${DOCKER_DATA_PATH}/photoprism/compartido-storage:/photoprism/storage
+    networks:
+      - proxy-nw

@@ -1,0 +1,37 @@
+# Homepage — Global Widgets (top of the dashboard)
+# Docs: https://gethomepage.dev/widgets/
+
+# Date and time
+- datetime:
+    text_size: xl
+    format:
+      dateStyle: long
+      timeStyle: short
+      hour12: false
+
+# System metrics via Glances
+- glances:
+    url: http://glances:61208
+    cpu: true
+    mem: true
+    cputemp: true
+    uptime: true
+    disk:
+      - /
+      - /home
+      - /mnt/ev_deluxe
+    diskUnits: bytes
+    label: Casita Server
+
+# Server Information
+- resources:
+    cpu: true
+    memory: true
+    disk:
+      - /
+      - /home
+      - /mnt/ev_deluxe
+    label: Host
+    expanded: true
+    units: metric
+    refresh: 3000

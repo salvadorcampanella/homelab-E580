@@ -1,0 +1,21 @@
+# Homepage — Bookmarks / Shortcuts
+# Docs: https://gethomepage.dev/configs/bookmarks/
+
+- Administration:
+    - GitHub Repo:
+        - abbr: GH
+          href: https://github.com/Salvador512/casita-dockercompose
+    - DuckDNS:
+        - abbr: DD
+          href: https://www.duckdns.org/
+
+- Documentation:
+    - Homepage Docs:
+        - abbr: HP
+          href: https://gethomepage.dev/
+    - Servarr Wiki:
+        - abbr: SW
+          href: https://wiki.servarr.com/
+    - LinuxServer.io:
+        - abbr: LS
+          href: https://www.linuxserver.io/

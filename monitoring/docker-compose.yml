@@ -1,0 +1,77 @@
+# Monitoring Stack — Grafana, Prometheus, Node-Exporter, cAdvisor
+# Grafana: Visualize metrics
+# Prometheus: Collects metrics and stores time-series data
+# Node-Exporter: Extracts host metrics (CPU, RAM, Disks)
+# cAdvisor: Extracts Docker container metrics
+
+services:
+  grafana:
+    image: grafana/grafana:13.1.1
+    container_name: grafana
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      # Allows easier Grafana embedding in iframes if needed
+      - GF_SERVER_ROOT_URL=http://grafana.casita.local
+    volumes:
+      - ${DOCKER_DATA_PATH}/monitoring/grafana:/var/lib/grafana
+    networks:
+      - proxy-nw
+
+  prometheus:
+    image: prom/prometheus:v3.5.5
+    container_name: prometheus
+    restart: unless-stopped
+    # Runs as user nobody/nogroup for Prometheus, or as 1000 (managed by granting host permissions)
+    user: "1000:1000"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${DOCKER_DATA_PATH}/monitoring/prometheus:/prometheus
+    networks:
+      - proxy-nw
+
+  node-exporter:
+    image: prom/node-exporter:v1.10.2
+    container_name: node-exporter
+    restart: unless-stopped
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - /:/host:ro,rslave
+      - /home:/host/home:ro,rslave
+      - /mnt:/host/mnt:ro,rslave
+    networks:
+      - proxy-nw
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.5
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    command:
+      - '-housekeeping_interval=15s'
+      - '-docker_only=true'
+      - '-disable_metrics=tcp,advtcp,udp,percpu,sched,process'
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /home/casita/docker-engine:/var/lib/docker:ro
+      - /home/casita/containerd-engine:/var/lib/containerd:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - proxy-nw
+
+networks:
+  proxy-nw:
+    external: true

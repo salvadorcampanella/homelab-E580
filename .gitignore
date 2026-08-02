@@ -1,0 +1,19 @@
+# Docker
+.env
+
+# Homepage — real config with API keys (use services.yaml.template as base)
+homepage/config/services.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# AIDLC — transient generated files (keep analysis artifacts, exclude state/runtime logs)
+aidlc-docs/aidlc-state.md
+aidlc-docs/**/audit.md
+aidlc-docs/**/reverse-engineering-timestamp.md
+# AIDLC framework internals — not needed in the repo
+.aidlc-rule-details/

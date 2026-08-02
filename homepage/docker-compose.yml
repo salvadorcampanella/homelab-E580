@@ -1,0 +1,61 @@
+# Homepage — Homelab Dashboard
+# Docs: https://gethomepage.dev/
+# Glances — System metrics (CPU, RAM, disk, network, temperature)
+# Docs: https://nicolargo.github.io/glances/
+services:
+
+  # -------------------------------------------------------------------
+  # Homepage — Main homelab dashboard
+  # Configuration in ${DOCKER_DATA_PATH}/homepage/config/
+  # -------------------------------------------------------------------
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    user: 1000:1000
+    group_add:
+      - "124" # Docker group ID
+
+    environment:
+      TZ: ${TZ:-Europe/Madrid}
+      # Required for Homepage to read the Docker socket
+      PUID: 1000
+      PGID: 1000
+      # Required since Homepage v1 — allowed hosts list via reverse proxy
+      HOMEPAGE_ALLOWED_HOSTS: homepage.casita.local
+    volumes:
+      - ${DOCKER_DATA_PATH}/homepage/config:/app/config
+      # Docker socket — required for the containers widget
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Host disks for resources widget
+      - /:/hostfs:ro
+      - /home:/home:ro
+      - /mnt/ev_deluxe:/mnt/ev_deluxe:ro
+    networks:
+      - proxy-nw
+
+  # -------------------------------------------------------------------
+  # Glances — Host system resource monitor
+  # Homepage queries it via REST API at http://glances:61208
+  # Own web interface accessible at glances.casita.local via NPM
+  # -------------------------------------------------------------------
+  glances:
+    image: nicolargo/glances:latest-full
+    container_name: glances
+    restart: unless-stopped
+    pid: host   # required to see host processes
+    environment:
+      TZ: ${TZ:-Europe/Madrid}
+      GLANCES_OPT: "-w"   # web server mode
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/os-release:/etc/os-release:ro
+      - /:/hostfs:ro
+      - /home:/home:ro
+      - /mnt/ev_deluxe:/mnt/ev_deluxe:ro
+    networks:
+      - proxy-nw
+
+networks:
+  proxy-nw:
+    external: true

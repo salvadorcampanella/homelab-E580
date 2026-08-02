@@ -1,0 +1,29 @@
+# Pi-hole — Private DNS and Ad-blocker
+# Docs: https://github.com/pi-hole/docker-pi-hole/ | https://docs.pi-hole.net/
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:2026.07.0
+    restart: unless-stopped
+    ports:
+      # DNS: must be exposed on the host for the local network to use it
+      - "53:53/tcp"
+      - "53:53/udp"
+      # Temporary direct access by IP:
+      - "8080:80/tcp"
+      # Web UI is also accessible via Nginx Proxy Manager
+    environment:
+      TZ: ${TZ:-Europe/Madrid}
+      FTLCONF_webserver_api_password: ${PIHOLE_PASSWORD}
+      FTLCONF_dns_listeningMode: 'ALL'
+    volumes:
+      - ${DOCKER_DATA_PATH}/pihole/config:/etc/pihole
+      - ${DOCKER_DATA_PATH}/pihole/dnsmasq:/etc/dnsmasq.d
+    cap_add:
+      - SYS_NICE
+    networks:
+      - proxy-nw
+
+networks:
+  proxy-nw:
+    external: true

@@ -1,0 +1,44 @@
+# Homepage — General Configuration
+# Docs: https://gethomepage.dev/configs/settings/
+
+title: Casita Homelab
+description: Personal homelab control panel
+
+# Interface language
+language: es
+
+# Theme: light | dark | system
+color: slate
+theme: dark
+
+# Show client IP in the header
+showStats: true
+
+# Favicon icon
+favicon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png
+
+# Background: dark gradient (no external image)
+background:
+  image: ""
+  blur: sm
+  saturate: 50
+  brightness: 50
+  opacity: 50
+
+# Top bar with date and time
+headerStyle: clean
+
+# Default column layout
+layout:
+  Infrastructure:
+    style: row
+    columns: 3
+  Media:
+    style: row
+    columns: 3
+  Downloads:
+    style: row
+    columns: 2
+  Other:
+    style: row
+    columns: 2

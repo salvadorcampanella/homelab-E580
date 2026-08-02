@@ -1,0 +1,10 @@
+# Root orchestrator to manage all services
+include:
+  - path: ./proxy/docker-compose.yml
+  - path: ./pihole/docker-compose.yml
+  - path: ./portainer/docker-compose.yml
+  - path: ./duckdns/docker-compose.yml
+  - path: ./arr/docker-compose.yml
+  - path: ./homepage/docker-compose.yml
+  - path: ./photoprism/docker-compose.yml
+  - path: ./monitoring/docker-compose.yml

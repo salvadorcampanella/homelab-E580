@@ -1,0 +1,185 @@
+# Stack *arr + Jellyfin — Media management and streaming
+# Radarr (movies), Sonarr (series), Prowlarr (indexers),
+# Bazarr (subtitles), qBittorrent (downloads), Jellyfin (streaming)
+# FlareSolverr (bypass Cloudflare for indexers)
+# Docs: https://wiki.servarr.com/ | https://jellyfin.org/docs/ | https://github.com/FlareSolverr/FlareSolverr
+
+# ---------------------------------------------------------------------------
+# GPU / Hardware-acceleration anchor — Intel UHD 620 (QuickSync / VAAPI)
+# ---------------------------------------------------------------------------
+# Reusable block: any future service (Immich, Plex, Handbrake…) can inherit
+# this configuration with <<: *gpu-access in its service definition.
+#
+# Host GIDs (auto-detected, Ubuntu 22.04):
+#   video  → 44   (owns /dev/dri/card1)
+#   render → 992  (owns /dev/dri/renderD128)
+#
+# To verify on the host:  getent group video render
+# ---------------------------------------------------------------------------
+x-gpu-access: &gpu-access
+  devices:
+    - /dev/dri/renderD128:/dev/dri/renderD128
+    - /dev/dri/card1:/dev/dri/card1
+  group_add:
+    - "44"   # video
+    - "992"  # render
+services:
+
+  # -------------------------------------------------------------------
+  # Radarr — Movie management
+  # -------------------------------------------------------------------
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/Madrid}
+    volumes:
+      - ${DOCKER_DATA_PATH}/arr/radarr:/config
+      - ${DOCKER_DATA_PATH}/media/movies:/movies
+      - ${DOCKER_DATA_PATH}/arr/downloads:/downloads
+    networks:
+      - proxy-nw
+
+  # -------------------------------------------------------------------
+  # Sonarr — TV series management
+  # -------------------------------------------------------------------
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/Madrid}
+    volumes:
+      - ${DOCKER_DATA_PATH}/arr/sonarr:/config
+      - ${DOCKER_DATA_PATH}/media/tv:/tv
+      - ${DOCKER_DATA_PATH}/arr/downloads:/downloads
+    networks:
+      - proxy-nw
+
+  # -------------------------------------------------------------------
+  # Prowlarr — Indexer manager (torrents/usenet indexers)
+  # sysctls: disables IPv6 to avoid SSL issues with Cloudflare indexers
+  # dns: forces reliable resolution (1.1.1.1/8.8.8.8) instead of host DNS
+  # -------------------------------------------------------------------
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/Madrid}
+    volumes:
+      - ${DOCKER_DATA_PATH}/arr/prowlarr:/config
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
+    networks:
+      - proxy-nw
+
+  # -------------------------------------------------------------------
+  # Bazarr — Subtitles management
+  # -------------------------------------------------------------------
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/Madrid}
+    volumes:
+      - ${DOCKER_DATA_PATH}/arr/bazarr:/config
+      - ${DOCKER_DATA_PATH}/media/movies:/movies
+      - ${DOCKER_DATA_PATH}/media/tv:/tv
+    networks:
+      - proxy-nw
+
+  # -------------------------------------------------------------------
+  # qBittorrent — Download client
+  # Torrents port 6881 exposed to host (necessary for seeding)
+  # -------------------------------------------------------------------
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/Madrid}
+      - WEBUI_PORT=8080
+    volumes:
+      - ${DOCKER_DATA_PATH}/arr/qbittorrent:/config
+      - ${DOCKER_DATA_PATH}/arr/downloads:/downloads
+    ports:
+      - "6881:6881/tcp"
+      - "6881:6881/udp"
+      # Web UI NOT exposed to host — accessed via Nginx Proxy Manager
+    networks:
+      - proxy-nw
+
+  # -------------------------------------------------------------------
+  # Jellyfin — Media streaming server
+  # Intel QuickSync (VAAPI) hardware transcoding enabled via x-gpu-access.
+  # In Jellyfin UI: Dashboard > Playback > Transcoding
+  #   → Hardware acceleration: Video Acceleration API (VAAPI)
+  #   → VA-API Device: /dev/dri/renderD128
+  # -------------------------------------------------------------------
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    <<: *gpu-access
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/Madrid}
+      # Intel VAAPI driver (i965 is more compatible with some UHD 620 implementations than iHD)
+      - LIBVA_DRIVER_NAME=i965
+    volumes:
+      # config: Jellyfin database, metadata, transcoding cache — needs rw.
+      # Run once on host if you see permission errors:
+      #   sudo chown -R 1000:1000 ${DOCKER_DATA_PATH}/arr/jellyfin
+      - ${DOCKER_DATA_PATH}/arr/jellyfin:/config
+      - ${DOCKER_DATA_PATH}/media/movies:/data/movies:ro
+      - ${DOCKER_DATA_PATH}/media/tv:/data/tv:ro
+    networks:
+      - proxy-nw
+
+  # -------------------------------------------------------------------
+  # FlareSolverr — Proxy to bypass Cloudflare on Prowlarr indexers
+  # Docs: https://github.com/FlareSolverr/FlareSolverr
+  # Configure in Prowlarr: Settings > Indexers > Add Indexer Proxy
+  #   Type: FlareSolverr | URL: http://flaresolverr:8191
+  # sysctls/dns: same IPv6/DNS fix as prowlarr
+  # -------------------------------------------------------------------
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:v3.5.0
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Europe/Madrid}
+      LOG_LEVEL: ${FLARESOLVERR_LOG_LEVEL:-info}
+      # LOG_HTML: false   # uncomment to debug HTML responses
+      # CAPTCHA_SOLVER: none  # options: none, hcaptcha-solver, 9kw, anticaptcha, deathbycaptcha
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
+    # NOT exposed to host — internal access via proxy-nw (container: flaresolverr:8191)
+    networks:
+      - proxy-nw
+
+networks:
+  proxy-nw:
+    external: true

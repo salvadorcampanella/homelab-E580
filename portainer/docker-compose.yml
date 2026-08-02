@@ -1,0 +1,15 @@
+services:
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce:lts
+    restart: unless-stopped
+    # Ports are NOT exposed to the host, it will be accessed via Nginx Proxy Manager
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKER_DATA_PATH}/portainer:/data
+    networks:
+      - proxy-nw
+
+networks:
+  proxy-nw:
+    external: true

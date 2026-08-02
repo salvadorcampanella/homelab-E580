@@ -1,0 +1,6 @@
+# Homepage — Docker Integration
+# Docs: https://gethomepage.dev/configs/docker/
+# Allows displaying the state (running/stopped) of each container on its card
+
+docker-local:
+  socket: /var/run/docker.sock
