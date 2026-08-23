@@ -249,6 +249,7 @@ if [[ "$RUN_NPM" == "true" ]]; then
   create_proxy_host "bazarr.casita.local"    "bazarr"                "6767"  "http"
   create_proxy_host "qbit.casita.local"      "qbittorrent"           "8080"  "http"
   create_proxy_host "jellyfin.casita.local"  "jellyfin"              "8096"  "http"
+  create_proxy_host "tdarr.casita.local"     "tdarr"                 "8265"  "http"
 
   # Homepage + Glances + Grafana
   create_proxy_host "homepage.casita.local"  "homepage"              "3000"  "http"
@@ -288,6 +289,7 @@ if [[ "$RUN_DNS" == "true" ]]; then
     add_pihole_dns "bazarr.casita.local"
     add_pihole_dns "qbit.casita.local"
     add_pihole_dns "jellyfin.casita.local"
+    add_pihole_dns "tdarr.casita.local"
 
     # Dashboard + monitoring
     add_pihole_dns "homepage.casita.local"

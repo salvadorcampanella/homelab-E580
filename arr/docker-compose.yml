@@ -180,6 +180,44 @@ services:
     networks:
       - proxy-nw
 
+  # -------------------------------------------------------------------
+  # Tdarr — Automated media transcoding and health checking
+  # Re-encodes files >8 GB to H.264 (AVC) using Intel QuickSync (VAAPI).
+  # Applies HDR→SDR tone mapping to preserve correct colors in VLC/Jellyfin.
+  # Web UI: tdarr.casita.local (port 8265)
+  # Docs: https://docs.tdarr.io/
+  #
+  # Post-deploy config (see arr/TDARR_SETUP.md):
+  #   1. Add libraries (movies + tv) in Tdarr UI
+  #   2. Create a Flow: filter by size >8 GB → transcode H.264 VAAPI
+  #   3. Enable HDR→SDR tone mapping in the transcode plugin
+  # -------------------------------------------------------------------
+  tdarr:
+    image: ghcr.io/haveagitgat/tdarr:latest
+    container_name: tdarr
+    restart: unless-stopped
+    <<: *gpu-access
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/Madrid}
+      - UMASK_SET=002
+      - serverIP=0.0.0.0
+      - serverPort=8266
+      - webUIPort=8265
+      - internalNode=true
+      - internalNodePort=8267
+      - nodeName=E580-Node
+    volumes:
+      - ${DOCKER_DATA_PATH}/arr/tdarr/server:/app/server
+      - ${DOCKER_DATA_PATH}/arr/tdarr/configs:/app/configs
+      - ${DOCKER_DATA_PATH}/arr/tdarr/logs:/app/logs
+      - ${DOCKER_DATA_PATH}/arr/tdarr/transcode-cache:/temp
+      - ${DOCKER_DATA_PATH}/media/movies:/media/movies
+      - ${DOCKER_DATA_PATH}/media/tv:/media/tv
+    networks:
+      - proxy-nw
+
 networks:
   proxy-nw:
     external: true
