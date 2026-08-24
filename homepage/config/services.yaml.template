@@ -1,23 +1,39 @@
 # Homepage — Homelab Services
 # Docs: https://gethomepage.dev/configs/services/
-#
-# IMPORTANT: replace values marked with <CHANGE_ME> with real ones:
-#   - PIHOLE_API_KEY       → Pi-hole > Settings > API / Web interface > Show API Key
-#   - JELLYFIN_API_KEY     → Jellyfin > Dashboard > API Keys > New key
-#   - PORTAINER_API_KEY    → Portainer > Account > Access Tokens > Add access token
-#   (qBittorrent uses username/password directly)
+
+- System Overview:
+    - Top Processes:
+        icon: glances.png
+        href: http://glances.casita.local
+        description: Real-time process usage
+        widget:
+          type: glances
+          url: http://glances:61208
+          version: 4
+          metric: process
+
+    - Public IP:
+        icon: router.png
+        href: https://api.ipify.org
+        description: Public IP Address
+        widget:
+          type: customapi
+          url: https://api.ipify.org?format=json
+          mappings:
+            - field: ip
+              label: IP
 
 - Infrastructure:
     - Nginx Proxy Manager:
         icon: nginx-proxy-manager.png
-        href: http://npm.casita.local
+        href: http://192.168.0.102:81
         description: Reverse Proxy and SSL
         container: nginx-proxy-manager
         server: docker-local
 
     - Pi-hole:
         icon: pi-hole.png
-        href: http://pihole.casita.local
+        href: http://pihole.casita.local/admin
         description: DNS + Ad-blocker
         container: pihole
         server: docker-local
@@ -36,7 +52,7 @@
         widget:
           type: portainer
           url: https://portainer:9443
-          env: 1
+          env: 3
           key: <PORTAINER_API_KEY>   # Portainer > Account > Access Tokens
 
     - Glances:
@@ -48,6 +64,7 @@
         widget:
           type: glances
           url: http://glances:61208
+          version: 4
           metric: cpu
 
     - Grafana:
@@ -107,6 +124,16 @@
         container: photoprism-compartido
         server: docker-local
 
+    - Tdarr:
+        icon: tdarr.png
+        href: http://tdarr.casita.local
+        description: Automated media transcoding
+        container: tdarr
+        server: docker-local
+        widget:
+          type: tdarr
+          url: http://tdarr:8265
+
 - Downloads:
     - qBittorrent:
         icon: qbittorrent.png
@@ -142,5 +169,3 @@
           type: bazarr
           url: http://bazarr:6767
           key: <BAZARR_API_KEY>    # Bazarr > Settings > General > API Key
-
-

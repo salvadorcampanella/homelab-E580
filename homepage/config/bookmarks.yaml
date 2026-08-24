@@ -1,21 +1,27 @@
 # Homepage — Bookmarks / Shortcuts
 # Docs: https://gethomepage.dev/configs/bookmarks/
 
-- Administration:
+- Administration & Network:
+    - Router Admin:
+        - icon: router.png
+          href: http://192.168.1.1
     - GitHub Repo:
-        - abbr: GH
-          href: https://github.com/Salvador512/casita-dockercompose
+        - icon: github.png
+          href: https://github.com/salvadorcampanella/homelab-E580
     - DuckDNS:
-        - abbr: DD
+        - icon: duckdns.png
           href: https://www.duckdns.org/
+    - Speedtest:
+        - icon: speedtest-tracker.png
+          href: https://www.speedtest.net/
 
-- Documentation:
+- Documentation & Utilities:
     - Homepage Docs:
-        - abbr: HP
+        - icon: homepage.png
           href: https://gethomepage.dev/
     - Servarr Wiki:
-        - abbr: SW
+        - icon: radarr.png
           href: https://wiki.servarr.com/
     - LinuxServer.io:
-        - abbr: LS
+        - icon: linuxserver.png
           href: https://www.linuxserver.io/

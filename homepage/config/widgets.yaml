@@ -9,29 +9,26 @@
       timeStyle: short
       hour12: false
 
-# System metrics via Glances
-- glances:
-    url: http://glances:61208
+# Search bar
+- search:
+    provider: google
+    target: _blank
+
+# Weather forecast (Open-Meteo with browser geolocation)
+- openmeteo:
+    units: metric
+    cache: 15
+
+# Server Information
+- resources:
+    label: Casita Server
     cpu: true
-    mem: true
+    memory: true
     cputemp: true
     uptime: true
     disk:
       - /
-      - /home
       - /mnt/ev_deluxe
-    diskUnits: bytes
-    label: Casita Server
-
-# Server Information
-- resources:
-    cpu: true
-    memory: true
-    disk:
-      - /
-      - /home
-      - /mnt/ev_deluxe
-    label: Host
     expanded: true
     units: metric
     refresh: 3000

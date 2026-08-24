@@ -5,13 +5,18 @@ title: Casita Homelab
 description: Personal homelab control panel
 
 # Interface language
-language: es
+language: en
 
-# Theme: light | dark | system
-color: slate
-theme: dark
+# Theme & Color: Omitted to unlock ALL interactive UI customization controls
+# (Unlocks light/dark theme toggle and color palette selector in footer)
 
-# Show client IP in the header
+# Clean status indicators (colored dots)
+statusStyle: dot
+
+# Quicklaunch search modal (Ctrl+K / Cmd+K)
+quicklaunch: true
+
+# Show client IP and network stats in header/footer
 showStats: true
 
 # Favicon icon
@@ -25,11 +30,14 @@ background:
   brightness: 50
   opacity: 50
 
-# Top bar with date and time
+# Top bar style
 headerStyle: clean
 
 # Default column layout
 layout:
+  System Overview:
+    style: row
+    columns: 2
   Infrastructure:
     style: row
     columns: 3

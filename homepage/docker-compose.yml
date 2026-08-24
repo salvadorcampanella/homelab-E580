@@ -22,7 +22,7 @@ services:
       PUID: 1000
       PGID: 1000
       # Required since Homepage v1 — allowed hosts list via reverse proxy
-      HOMEPAGE_ALLOWED_HOSTS: homepage.casita.local
+      HOMEPAGE_ALLOWED_HOSTS: homepage.casita.local,homepage.casitaogrove.duckdns.org,casitaogrove.duckdns.org
     volumes:
       - ${DOCKER_DATA_PATH}/homepage/config:/app/config
       # Docker socket — required for the containers widget
