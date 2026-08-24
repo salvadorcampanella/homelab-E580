@@ -153,6 +153,8 @@ homelab-e580/
 
 The homelab includes a production-grade, pre-configured Grafana SRE Dashboard located at [`monitoring/dashboards/docker_system_monitoring.json`](monitoring/dashboards/docker_system_monitoring.json).
 
+![Grafana SRE Dashboard Preview](https://salvadorcampanella-assets.s3.eu-west-1.amazonaws.com/grafana-dashboard.webp)
+
 ### Key Features:
 - **🖥️ Host System Overview**: System Uptime, CPU Load (1m), RAM Usage (Used vs Total capacity), Swap Usage, Disk Used (LCD), Inode Usage (LCD), CPU Mode Breakdown, per-vCPU usage, CPU Core Temperatures (°C), and Host Network Traffic (+Rx / -Tx mirrored).
 - **💾 Storage & Disk Performance**: Dual-drive breakdown (`/dev/sda1` root and `/dev/sdd1` `/mnt/ev_deluxe`) covering 100% Stacked Disk Space, Throughput (Read/Write Bps), IOPS, and I/O Utilization % (Disk Busy).
