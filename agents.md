@@ -308,10 +308,18 @@ Comprehensive system and container monitoring stack.
 
 | Service       | Container       | Domain                 | Port  | Notes                                                              |
 |---------------|-----------------|------------------------|-------|--------------------------------------------------------------------|
-| Grafana       | `grafana`       | `grafana.casita.local` | 3000  | Dashboards. Uses `user: "1000:1000"`.                              |
-| Prometheus    | `prometheus`    | (Internal)             | 9090  | Metrics TSDB (15 days retention). Uses `user: "1000:1000"`.        |
+| Grafana       | `grafana`       | `grafana.casita.local` | 3000  | Visual Dashboards. Pre-loaded with SRE Docker Monitoring Dashboard. |
+| Prometheus    | `prometheus`    | (Internal)             | 9090  | Metrics TSDB (15d retention, `--web.enable-admin-api` enabled).    |
 | Node Exporter | `node-exporter` | (Internal)             | 9100  | Host metrics. Mounts `/`, `/home`, `/mnt` as read-only.            |
-| cAdvisor      | `cadvisor`      | (Internal)             | 8080  | Container metrics. Mounts docker socket and sys/cgroup files.      |
+| cAdvisor      | `cadvisor`      | (Internal)             | 8080  | Container metrics (cgroup, memory working set, container restarts).|
+
+#### Dashboard Location & Management
+* **JSON Location**: [`monitoring/dashboards/docker_system_monitoring.json`](monitoring/dashboards/docker_system_monitoring.json)
+* **Grafana Dashboard UID**: `BiigkBu7k`
+* **Automated Sync**: Python API upload script:
+  ```bash
+  cat monitoring/dashboards/docker_system_monitoring.json | docker exec -i grafana curl -s -X POST -H "Content-Type: application/json" -u admin:<PASSWORD> http://localhost:3000/api/dashboards/db -d @-
+  ```
 
 ---
 

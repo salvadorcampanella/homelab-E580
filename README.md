@@ -109,7 +109,8 @@ homelab-e580/
 ├── photoprism/                  # 📸 Photo gallery (personal + shared instances)
 │   └── docker-compose.yml
 ├── monitoring/                  # 📊 Grafana, Prometheus, Node Exporter, cAdvisor
-│   └── docker-compose.yml
+│   ├── docker-compose.yml
+│   └── dashboards/              # 📈 Pre-configured SRE Grafana Dashboards (JSON)
 ├── homepage/                    # 🏠 Dashboard + Glances (system metrics)
 │   ├── docker-compose.yml
 │   └── config/                  # settings, services, widgets, docker, bookmarks
@@ -145,6 +146,22 @@ homelab-e580/
 | Prometheus | `prometheus` | — | Internal |
 | Node Exporter | `node-exporter` | — | Internal |
 | cAdvisor | `cadvisor` | — | Internal |
+
+---
+
+## Monitoring & SRE Dashboard
+
+The homelab includes a production-grade, pre-configured Grafana SRE Dashboard located at [`monitoring/dashboards/docker_system_monitoring.json`](monitoring/dashboards/docker_system_monitoring.json).
+
+### Key Features:
+- **🖥️ Host System Overview**: System Uptime, CPU Load (1m), RAM Usage (Used vs Total capacity), Swap Usage, Disk Used (LCD), Inode Usage (LCD), CPU Mode Breakdown, per-vCPU usage, CPU Core Temperatures (°C), and Host Network Traffic (+Rx / -Tx mirrored).
+- **💾 Storage & Disk Performance**: Dual-drive breakdown (`/dev/sda1` root and `/dev/sdd1` `/mnt/ev_deluxe`) covering 100% Stacked Disk Space, Throughput (Read/Write Bps), IOPS, and I/O Utilization % (Disk Busy).
+- **🐳 Docker Container Metrics & Rankings**: Top 5 Rankings (CPU %, RAM Working Set, Network Traffic), per-container real-time metrics, dynamic Container Filter dropdown (`$container`), and Container Restart tracking (`$__range` dynamic interval).
+
+### How to Import:
+1. Open Grafana (`http://grafana.casita.local` or `http://<HOST_IP>:3000`).
+2. Navigate to **Dashboards** > **New** > **Import**.
+3. Upload [`monitoring/dashboards/docker_system_monitoring.json`](monitoring/dashboards/docker_system_monitoring.json) or paste its JSON content.
 
 ---
 

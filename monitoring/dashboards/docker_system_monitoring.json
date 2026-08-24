@@ -1,0 +1,1486 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Production SRE Overview - Docker Host & Container Monitoring",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 100,
+      "title": "\ud83d\udda5\ufe0f Host System Overview",
+      "type": "row"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
+      "id": 1,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "expr": "floor((time() - node_boot_time_seconds) / 86400)",
+          "instant": true,
+          "legendFormat": "days",
+          "refId": "A"
+        },
+        {
+          "expr": "floor(((time() - node_boot_time_seconds) % 86400) / 3600)",
+          "instant": true,
+          "legendFormat": "hours",
+          "refId": "B"
+        }
+      ],
+      "title": "Uptime",
+      "type": "stat"
+    },
+    {
+      "description": "System load average over 1 minute. Warning at 4 vCPUs, Critical at 8 vCPUs (100% capacity for 8 vCPUs).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 50,
+            "stacking": {
+              "group": "A",
+              "mode": "percent"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 4
+              },
+              {
+                "color": "red",
+                "value": 8
+              }
+            ]
+          },
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "node_load1 / count by(instance, job)(node_cpu_seconds_total{mode=\"idle\"})",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "CPU Load (1m)",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 12884901888
+              },
+              {
+                "color": "red",
+                "value": 15032385536
+              }
+            ]
+          },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "id": 5,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+          "instant": true,
+          "legendFormat": "Used RAM",
+          "refId": "A"
+        },
+        {
+          "expr": "node_memory_MemTotal_bytes",
+          "instant": true,
+          "legendFormat": "Total RAM",
+          "refId": "B"
+        }
+      ],
+      "title": "RAM Usage",
+      "type": "stat"
+    },
+    {
+      "description": "Swap memory consumption. Warning above 500 MiB, Critical above 1.5 GiB.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 524288000
+              },
+              {
+                "color": "red",
+                "value": 1610612736
+              }
+            ]
+          },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "id": 6,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Swap Usage",
+      "type": "gauge"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "displayMode": "lcd",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "showUnfilled": true,
+        "text": {
+          "titleSize": 11,
+          "valueSize": 12
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(node_filesystem_size_bytes{mountpoint=\"/\"} - node_filesystem_free_bytes{mountpoint=\"/\"}) / sum(node_filesystem_size_bytes{mountpoint=\"/\"})",
+          "instant": true,
+          "legendFormat": "/",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(node_filesystem_size_bytes{mountpoint=\"/mnt/ev_deluxe\"} - node_filesystem_free_bytes{mountpoint=\"/mnt/ev_deluxe\"}) / sum(node_filesystem_size_bytes{mountpoint=\"/mnt/ev_deluxe\"})",
+          "instant": true,
+          "legendFormat": "/mnt/ev_deluxe",
+          "refId": "B"
+        }
+      ],
+      "title": "Disk used",
+      "type": "bargauge"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "id": 8,
+      "options": {
+        "displayMode": "lcd",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "showUnfilled": true,
+        "text": {
+          "titleSize": 11,
+          "valueSize": 12
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(node_filesystem_files{mountpoint=\"/\"} - node_filesystem_files_free{mountpoint=\"/\"}) / sum(node_filesystem_files{mountpoint=\"/\"})",
+          "instant": true,
+          "legendFormat": "/",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(node_filesystem_files{mountpoint=\"/mnt/ev_deluxe\"} - node_filesystem_files_free{mountpoint=\"/mnt/ev_deluxe\"}) / sum(node_filesystem_files{mountpoint=\"/mnt/ev_deluxe\"})",
+          "instant": true,
+          "legendFormat": "/mnt/ev_deluxe",
+          "refId": "B"
+        }
+      ],
+      "title": "Inode Usage",
+      "type": "bargauge"
+    },
+    {
+      "description": "Total active Docker containers.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 7
+      },
+      "id": 2,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "expr": "count(rate(container_last_seen{name=~\"[a-zA-Z0-9_-]+\"}[1m]))",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Running Containers",
+      "type": "stat"
+    },
+    {
+      "description": "Container restart events within the selected Grafana time range.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 7
+      },
+      "id": 99,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "expr": "changes(container_start_time_seconds{name=~\"[a-zA-Z0-9_-]+\"}[$__range]) > 0",
+          "instant": true,
+          "legendFormat": "{{name}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Container Restarts (Selected Time Range)",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 50,
+            "lineInterpolation": "smooth",
+            "stacking": {
+              "group": "A",
+              "mode": "percent"
+            }
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "targets": [
+        {
+          "expr": "avg(rate(node_cpu_seconds_total{mode=\"user\"}[1m])) * 100",
+          "legendFormat": "user",
+          "refId": "A"
+        },
+        {
+          "expr": "avg(rate(node_cpu_seconds_total{mode=\"system\"}[1m])) * 100",
+          "legendFormat": "system",
+          "refId": "B"
+        },
+        {
+          "expr": "avg(rate(node_cpu_seconds_total{mode=\"iowait\"}[1m])) * 100",
+          "legendFormat": "iowait",
+          "refId": "C"
+        },
+        {
+          "expr": "avg(rate(node_cpu_seconds_total{mode=\"softirq\"}[1m])) * 100",
+          "legendFormat": "softirq",
+          "refId": "D"
+        },
+        {
+          "expr": "avg(rate(node_cpu_seconds_total{mode=\"irq\"}[1m])) * 100",
+          "legendFormat": "irq",
+          "refId": "E"
+        },
+        {
+          "expr": "avg(rate(node_cpu_seconds_total{mode=\"steal\"}[1m])) * 100",
+          "legendFormat": "steal",
+          "refId": "F"
+        },
+        {
+          "expr": "avg(rate(node_cpu_seconds_total{mode=\"nice\"}[1m])) * 100",
+          "legendFormat": "nice",
+          "refId": "G"
+        },
+        {
+          "expr": "avg(rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100",
+          "legendFormat": "idle",
+          "refId": "H"
+        }
+      ],
+      "title": "Host CPU Mode Breakdown (Idle, User, System, IOWait)",
+      "type": "timeseries"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineInterpolation": "smooth",
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "targets": [
+        {
+          "expr": "100 - (rate(node_cpu_seconds_total{mode=\"idle\"}[1m]) * 100)",
+          "legendFormat": "cpu{{cpu}}",
+          "refId": "A"
+        }
+      ],
+      "title": "CPU Usage per vCPU",
+      "type": "timeseries"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2
+          },
+          "unit": "celsius"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Max CPU Temp"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#F2495C",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Avg CPU Temp"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#5794F2",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "id": 98,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "targets": [
+        {
+          "expr": "max(node_hwmon_temp_celsius{chip=~\".*coretemp.*|.*thermal.*\"})",
+          "legendFormat": "Max CPU Temp",
+          "refId": "A"
+        },
+        {
+          "expr": "avg(node_hwmon_temp_celsius{chip=~\".*coretemp.*|.*thermal.*\"})",
+          "legendFormat": "Avg CPU Temp",
+          "refId": "B"
+        }
+      ],
+      "title": "CPU Temperature (\u00b0C)",
+      "type": "timeseries"
+    },
+    {
+      "description": "Host network traffic. Received (+Bps) is plotted upwards, Transmitted (-Bps) is plotted downwards.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          },
+          "unit": "Bps"
+        }
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 43
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(node_network_receive_bytes_total{device!=\"lo\"}[1m]))",
+          "legendFormat": "Received (+)",
+          "refId": "A"
+        },
+        {
+          "expr": "-sum(rate(node_network_transmit_bytes_total{device!=\"lo\"}[1m]))",
+          "legendFormat": "Transmitted (-)",
+          "refId": "B"
+        }
+      ],
+      "title": "Host Network Traffic",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 53
+      },
+      "id": 200,
+      "panels": [
+        {
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 50,
+                "lineInterpolation": "smooth",
+                "stacking": {
+                  "group": "A",
+                  "mode": "percent"
+                }
+              },
+              "unit": "bytes"
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 0,
+            "y": 54
+          },
+          "id": 11,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(node_filesystem_size_bytes{mountpoint=\"/\"} - node_filesystem_free_bytes{mountpoint=\"/\"})",
+              "legendFormat": "Used Space",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(node_filesystem_free_bytes{mountpoint=\"/\"})",
+              "legendFormat": "Free Space",
+              "refId": "B"
+            }
+          ],
+          "title": "/dev/sda1 (/) - Disk Space Breakdown (Used vs Free)",
+          "type": "timeseries"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 50,
+                "lineInterpolation": "smooth",
+                "stacking": {
+                  "group": "A",
+                  "mode": "percent"
+                }
+              },
+              "unit": "bytes"
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 12,
+            "y": 54
+          },
+          "id": 12,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(node_filesystem_size_bytes{mountpoint=\"/mnt/ev_deluxe\"} - node_filesystem_free_bytes{mountpoint=\"/mnt/ev_deluxe\"})",
+              "legendFormat": "Used Space",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(node_filesystem_free_bytes{mountpoint=\"/mnt/ev_deluxe\"})",
+              "legendFormat": "Free Space",
+              "refId": "B"
+            }
+          ],
+          "title": "/dev/sdd1 (/mnt/ev_deluxe) - Disk Space Breakdown (Used vs Free)",
+          "type": "timeseries"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth"
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 0,
+            "y": 64
+          },
+          "id": 15,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          },
+          "targets": [
+            {
+              "expr": "rate(node_disk_read_bytes_total{device=\"sda\"}[1m])",
+              "legendFormat": "Read",
+              "refId": "A"
+            },
+            {
+              "expr": "rate(node_disk_written_bytes_total{device=\"sda\"}[1m])",
+              "legendFormat": "Write",
+              "refId": "B"
+            }
+          ],
+          "title": "/dev/sda1 (/) - Disk Throughput (Read / Write)",
+          "type": "timeseries"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth"
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 12,
+            "y": 64
+          },
+          "id": 16,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          },
+          "targets": [
+            {
+              "expr": "rate(node_disk_read_bytes_total{device=\"sdd\"}[1m])",
+              "legendFormat": "Read",
+              "refId": "A"
+            },
+            {
+              "expr": "rate(node_disk_written_bytes_total{device=\"sdd\"}[1m])",
+              "legendFormat": "Write",
+              "refId": "B"
+            }
+          ],
+          "title": "/dev/sdd1 (/mnt/ev_deluxe) - Disk Throughput (Read / Write)",
+          "type": "timeseries"
+        },
+        {
+          "description": "Read and Write I/O Operations Per Second for /dev/sda1.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth"
+              },
+              "unit": "iops"
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 0,
+            "y": 74
+          },
+          "id": 101,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          },
+          "targets": [
+            {
+              "expr": "rate(node_disk_reads_completed_total{device=\"sda\"}[1m])",
+              "legendFormat": "Read IOPS (+)",
+              "refId": "A"
+            },
+            {
+              "expr": "-rate(node_disk_writes_completed_total{device=\"sda\"}[1m])",
+              "legendFormat": "Write IOPS (-)",
+              "refId": "B"
+            }
+          ],
+          "title": "/dev/sda1 (/) - Disk IOPS (Reads / Writes)",
+          "type": "timeseries"
+        },
+        {
+          "description": "Read and Write I/O Operations Per Second for /dev/sdd1.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth"
+              },
+              "unit": "iops"
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 12,
+            "y": 74
+          },
+          "id": 102,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          },
+          "targets": [
+            {
+              "expr": "rate(node_disk_reads_completed_total{device=\"sdd\"}[1m])",
+              "legendFormat": "Read IOPS (+)",
+              "refId": "A"
+            },
+            {
+              "expr": "-rate(node_disk_writes_completed_total{device=\"sdd\"}[1m])",
+              "legendFormat": "Write IOPS (-)",
+              "refId": "B"
+            }
+          ],
+          "title": "/dev/sdd1 (/mnt/ev_deluxe) - Disk IOPS (Reads / Writes)",
+          "type": "timeseries"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth"
+              },
+              "unit": "percent"
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 0,
+            "y": 84
+          },
+          "id": 17,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          },
+          "targets": [
+            {
+              "expr": "rate(node_disk_io_time_seconds_total{device=\"sda\"}[1m]) * 100",
+              "legendFormat": "Disk Busy %",
+              "refId": "A"
+            }
+          ],
+          "title": "/dev/sda1 (/) - Disk Busy % (I/O Utilization)",
+          "type": "timeseries"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth"
+              },
+              "unit": "percent"
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 12,
+            "y": 84
+          },
+          "id": 18,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          },
+          "targets": [
+            {
+              "expr": "rate(node_disk_io_time_seconds_total{device=\"sdd\"}[1m]) * 100",
+              "legendFormat": "Disk Busy %",
+              "refId": "A"
+            }
+          ],
+          "title": "/dev/sdd1 (/mnt/ev_deluxe) - Disk Busy % (I/O Utilization)",
+          "type": "timeseries"
+        }
+      ],
+      "title": "\ud83d\udcbe Storage & Disk Performance",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 54
+      },
+      "id": 300,
+      "panels": [
+        {
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "percent"
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 8,
+            "x": 0,
+            "y": 95
+          },
+          "id": 16,
+          "options": {
+            "displayMode": "basic",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true
+          },
+          "targets": [
+            {
+              "expr": "topk(5, avg_over_time(sum(rate(container_cpu_usage_seconds_total{name=~\"[a-zA-Z0-9_-]+\"}[1m])) by (name)[$__range:1m])) * 100",
+              "format": "time_series",
+              "instant": true,
+              "legendFormat": "{{name}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Top 5 Containers by CPU Usage",
+          "transformations": [],
+          "type": "bargauge"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "bytes"
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 8,
+            "x": 8,
+            "y": 95
+          },
+          "id": 17,
+          "options": {
+            "displayMode": "basic",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true
+          },
+          "targets": [
+            {
+              "expr": "topk(5, avg_over_time(sum(container_memory_working_set_bytes{name=~\"[a-zA-Z0-9_-]+\"}) by (name)[$__range:1m]))",
+              "format": "time_series",
+              "instant": true,
+              "legendFormat": "{{name}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Top 5 Containers by RAM Usage",
+          "transformations": [],
+          "type": "bargauge"
+        },
+        {
+          "description": "Top 5 containers by combined network bandwidth (Rx + Tx).",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 8,
+            "x": 16,
+            "y": 95
+          },
+          "id": 100,
+          "options": {
+            "displayMode": "basic",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true
+          },
+          "targets": [
+            {
+              "expr": "topk(5, avg_over_time((sum(rate(container_network_receive_bytes_total{name=~\"[a-zA-Z0-9_-]+\"}[1m])) by (name) + sum(rate(container_network_transmit_bytes_total{name=~\"[a-zA-Z0-9_-]+\"}[1m])) by (name))[$__range:1m]))",
+              "format": "time_series",
+              "instant": true,
+              "legendFormat": "{{name}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Top 5 Containers by Network Traffic",
+          "transformations": [],
+          "type": "bargauge"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "lineInterpolation": "smooth",
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                }
+              },
+              "unit": "percent"
+            }
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 105
+          },
+          "id": 18,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{name=~\"$container\",name=~\"[a-zA-Z0-9_-]+\"}[1m])) by (name) * 100",
+              "legendFormat": "{{name}}",
+              "refId": "A"
+            }
+          ],
+          "title": "CPU Usage per Container",
+          "type": "timeseries"
+        },
+        {
+          "description": "cAdvisor Working Set RAM (actual RAM monitored by Linux OOM-killer).",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth"
+              },
+              "unit": "bytes"
+            }
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 119
+          },
+          "id": 19,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{name=~\"$container\",name=~\"[a-zA-Z0-9_-]+\"}) by (name)",
+              "legendFormat": "{{name}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Memory Usage per Container",
+          "type": "timeseries"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "lineInterpolation": "smooth",
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                }
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 133
+          },
+          "id": 20,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(container_network_receive_bytes_total{name=~\"$container\",name=~\"[a-zA-Z0-9_-]+\"}[1m])) by (name)",
+              "legendFormat": "{{name}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Received Network Traffic per Container",
+          "type": "timeseries"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "lineInterpolation": "smooth",
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                }
+              },
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 147
+          },
+          "id": 21,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(container_network_transmit_bytes_total{name=~\"$container\",name=~\"[a-zA-Z0-9_-]+\"}[1m])) by (name)",
+              "legendFormat": "{{name}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Sent Network Traffic per Container",
+          "type": "timeseries"
+        }
+      ],
+      "title": "\ud83d\udc33 Docker Container Metrics & Rankings",
+      "type": "row"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "docker",
+    "prometheus",
+    "node-exporter",
+    "sre"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "definition": "label_values(container_last_seen{name=~\"[a-zA-Z0-9_-]+\"}, name)",
+        "includeAll": true,
+        "label": "Docker Container Filter",
+        "name": "container",
+        "options": [],
+        "query": "label_values(container_last_seen{name=~\"[a-zA-Z0-9_-]+\"}, name)",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "title": "Docker and system monitoring (nodeexporter v1.3.1)",
+  "uid": "BiigkBu7k",
+  "version": 60
+}
