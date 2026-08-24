@@ -8,17 +8,6 @@
 #   ./proxy/setup-npm-hosts.sh            # Run both NPM and Pi-hole setup
 #   ./proxy/setup-npm-hosts.sh --npm-only # Only create NPM proxy hosts
 #   ./proxy/setup-npm-hosts.sh --dns-only # Only create Pi-hole DNS entries
-#
-# REQUIREMENTS:
-#   - NPM running on localhost:81
-#   - Pi-hole running on localhost:8080 (mapped host port)
-#   - NPM_ADMIN_EMAIL, NPM_ADMIN_PASSWORD, PIHOLE_PASSWORD in .env
-#   - curl and jq installed on host
-#
-# DESCRIPTION:
-#   This script uses the NPM REST API to create all homelab Proxy Hosts,
-#   and the Pi-hole v6 REST API to add matching local DNS entries.
-#   It is safe to run multiple times — detects existing entries and skips them.
 # =============================================================================
 
 set -euo pipefail
@@ -43,67 +32,65 @@ if [[ -f "$ENV_FILE" ]]; then
   set +a
 fi
 
-# --- NPM Configuration ---
+# --- Configuration ---
 NPM_URL="${NPM_URL:-http://localhost:81}"
 NPM_EMAIL="${NPM_ADMIN_EMAIL:-admin@example.com}"
 NPM_PASSWORD="${NPM_ADMIN_PASSWORD:-changeme}"
-
-# --- Pi-hole Configuration ---
-# Pi-hole v6 web port is mapped to host port 8080 in pihole/docker-compose.yml
 PIHOLE_URL="${PIHOLE_URL:-http://localhost:8080}"
 PIHOLE_PASS="${PIHOLE_PASSWORD:-}"
-# The host IP that Pi-hole DNS entries should resolve to (the Docker host itself)
-PIHOLE_HOST_IP="${PIHOLE_HOST_IP:-127.0.0.1}"
+PIHOLE_HOST_IP="${PIHOLE_HOST_IP:-192.168.0.102}"
 
-# --- Colors ---
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# --- Logging ---
+log_info()  { echo -e "\033[0;34m[INFO]\033[0m  $*"; }
+log_ok()    { echo -e "\033[0;32m[OK]\033[0m    $*"; }
+log_warn()  { echo -e "\033[1;33m[WARN]\033[0m  $*"; }
+log_error() { echo -e "\033[0;31m[ERROR]\033[0m $*"; }
+log_dns()   { echo -e "\033[0;36m[DNS]\033[0m   $*"; }
 
-log_info()  { echo -e "${BLUE}[INFO]${NC}  $*"; }
-log_ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
-log_warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $*"; }
-log_dns()   { echo -e "${CYAN}[DNS]${NC}   $*"; }
+# --- Single Source of Truth for Services ---
+# Format: "domain|forward_host|forward_port|scheme|advanced_config"
+SERVICES=(
+  "pihole.casita.local|pihole|80|http|location = / {\n    return 302 /admin/;\n}"
+  "portainer.casita.local|portainer|9443|https|"
+  "npm.casita.local|nginx-proxy-manager|81|http|"
+  "radarr.casita.local|radarr|7878|http|"
+  "sonarr.casita.local|sonarr|8989|http|"
+  "prowlarr.casita.local|prowlarr|9696|http|"
+  "bazarr.casita.local|bazarr|6767|http|"
+  "qbit.casita.local|qbittorrent|8080|http|"
+  "jellyfin.casita.local|jellyfin|8096|http|"
+  "tdarr.casita.local|tdarr|8265|http|"
+  "homepage.casita.local|homepage|3000|http|"
+  "glances.casita.local|glances|61208|http|"
+  "grafana.casita.local|grafana|3000|http|"
+  "fotos.casita.local|photoprism-personal|2342|http|"
+  "familia.casita.local|photoprism-compartido|2342|http|"
+)
 
 # =============================================================================
-# NPM SECTION
+# NPM HELPERS
 # =============================================================================
 
 NPM_TOKEN=""
 
 npm_authenticate() {
   log_info "Authenticating to NPM (${NPM_URL})..."
-
-  local response
-  response=$(curl -s -X POST "${NPM_URL}/api/tokens" \
+  local resp
+  resp=$(curl -s -X POST "${NPM_URL}/api/tokens" \
     -H "Content-Type: application/json" \
     -d "{\"identity\": \"${NPM_EMAIL}\", \"secret\": \"${NPM_PASSWORD}\"}")
 
-  NPM_TOKEN=$(echo "$response" | jq -r '.token // empty')
-
+  NPM_TOKEN=$(echo "$resp" | jq -r '.token // empty')
   if [[ -z "$NPM_TOKEN" ]]; then
     log_error "Could not obtain NPM token. Check NPM_ADMIN_EMAIL and NPM_ADMIN_PASSWORD."
-    log_error "Response: ${response}"
     exit 1
   fi
-
   log_ok "NPM token obtained successfully."
 }
 
-# -----------------------------------------------------------------------------
-# create_proxy_host <domain> <forward_host> <forward_port> <scheme>
-# -----------------------------------------------------------------------------
 create_proxy_host() {
-  local domain="$1"
-  local fwd_host="$2"
-  local fwd_port="$3"
-  local scheme="${4:-http}"
+  local domain="$1" fwd_host="$2" fwd_port="$3" scheme="${4:-http}" adv_cfg="${5:-}"
 
-  # Check if already exists
   local existing
   existing=$(curl -s -X GET "${NPM_URL}/api/nginx/proxy-hosts" \
     -H "Authorization: Bearer ${NPM_TOKEN}" | \
@@ -129,7 +116,7 @@ create_proxy_host() {
       \"certificate_id\": 0,
       \"ssl_forced\": false,
       \"meta\": {\"letsencrypt_agree\": false, \"dns_challenge\": false},
-      \"advanced_config\": \"\",
+      \"advanced_config\": \"${adv_cfg}\",
       \"enabled\": 1,
       \"locations\": [],
       \"http2_support\": false
@@ -143,29 +130,26 @@ create_proxy_host() {
 }
 
 # =============================================================================
-# PI-HOLE SECTION
+# PI-HOLE HELPERS
 # =============================================================================
 
 PIHOLE_SESSION_ID=""
 
 pihole_authenticate() {
   log_info "Authenticating to Pi-hole (${PIHOLE_URL})..."
-
   if [[ -z "$PIHOLE_PASS" ]]; then
     log_warn "PIHOLE_PASSWORD not set — skipping Pi-hole DNS setup."
     return 1
   fi
 
-  local response
-  response=$(curl -s -X POST "${PIHOLE_URL}/api/auth" \
+  local resp
+  resp=$(curl -s -X POST "${PIHOLE_URL}/api/auth" \
     -H "Content-Type: application/json" \
     -d "{\"password\": \"${PIHOLE_PASS}\"}")
 
-  PIHOLE_SESSION_ID=$(echo "$response" | jq -r '.session.sid // empty')
-
+  PIHOLE_SESSION_ID=$(echo "$resp" | jq -r '.session.sid // empty')
   if [[ -z "$PIHOLE_SESSION_ID" ]]; then
     log_error "Could not obtain Pi-hole session. Check PIHOLE_PASSWORD."
-    log_error "Response: ${response}"
     return 1
   fi
 
@@ -177,25 +161,13 @@ pihole_logout() {
   if [[ -n "$PIHOLE_SESSION_ID" ]]; then
     curl -s -X DELETE "${PIHOLE_URL}/api/auth" \
       -H "X-FTL-SID: ${PIHOLE_SESSION_ID}" > /dev/null 2>&1 || true
-    log_info "Pi-hole session closed."
   fi
 }
 
-# -----------------------------------------------------------------------------
-# add_pihole_dns <domain> <ip>
-# Adds a local DNS A record in Pi-hole via v6 API.
-# Skips gracefully if the entry already exists.
-# Only call this for *.casita.local domains (not external domains).
-# -----------------------------------------------------------------------------
 add_pihole_dns() {
-  local domain="$1"
-  local ip="${2:-${PIHOLE_HOST_IP}}"
+  local domain="$1" ip="${2:-${PIHOLE_HOST_IP}}"
+  [[ -z "$PIHOLE_SESSION_ID" ]] && return 0
 
-  if [[ -z "$PIHOLE_SESSION_ID" ]]; then
-    return 0
-  fi
-
-  # Check if the DNS entry already exists
   local existing
   existing=$(curl -s -X GET "${PIHOLE_URL}/api/config/dns/hosts" \
     -H "X-FTL-SID: ${PIHOLE_SESSION_ID}" | \
@@ -207,11 +179,10 @@ add_pihole_dns() {
     return
   fi
 
+  local entry_encoded="${ip}%20${domain}"
   local http_code
-  http_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${PIHOLE_URL}/api/config/dns/hosts" \
-    -H "X-FTL-SID: ${PIHOLE_SESSION_ID}" \
-    -H "Content-Type: application/json" \
-    -d "{\"ip\": \"${ip}\", \"domain\": \"${domain}\"}")
+  http_code=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "${PIHOLE_URL}/api/config/dns/hosts/${entry_encoded}" \
+    -H "X-FTL-SID: ${PIHOLE_SESSION_ID}")
 
   if [[ "$http_code" == "201" || "$http_code" == "200" ]]; then
     log_dns "Created: ${domain} → ${ip}"
@@ -221,7 +192,7 @@ add_pihole_dns() {
 }
 
 # =============================================================================
-# MAIN — Setup
+# MAIN EXECUTION
 # =============================================================================
 
 echo ""
@@ -230,80 +201,28 @@ echo "  Casita Homelab — Setup Script"
 echo "=========================================="
 echo ""
 
-# --- NPM Setup ---
 if [[ "$RUN_NPM" == "true" ]]; then
   echo "--- NPM Proxy Hosts ---"
   npm_authenticate
-
-  log_info "Creating NPM Proxy Hosts..."
-  echo ""
-
-  # Infrastructure
-  create_proxy_host "pihole.casita.local"    "pihole"                "80"    "http"
-  create_proxy_host "portainer.casita.local" "portainer"             "9000"  "http"
-
-  # Stack *arr + Jellyfin
-  create_proxy_host "radarr.casita.local"    "radarr"                "7878"  "http"
-  create_proxy_host "sonarr.casita.local"    "sonarr"                "8989"  "http"
-  create_proxy_host "prowlarr.casita.local"  "prowlarr"              "9696"  "http"
-  create_proxy_host "bazarr.casita.local"    "bazarr"                "6767"  "http"
-  create_proxy_host "qbit.casita.local"      "qbittorrent"           "8080"  "http"
-  create_proxy_host "jellyfin.casita.local"  "jellyfin"              "8096"  "http"
-  create_proxy_host "tdarr.casita.local"     "tdarr"                 "8265"  "http"
-
-  # Homepage + Glances + Grafana
-  create_proxy_host "homepage.casita.local"  "homepage"              "3000"  "http"
-  create_proxy_host "glances.casita.local"   "glances"               "61208" "http"
-  create_proxy_host "grafana.casita.local"   "grafana"               "3000"  "http"
-
-  # PhotoPrism
-  create_proxy_host "fotos.casita.local"     "photoprism-personal"   "2342"  "http"
-  create_proxy_host "familia.casita.local"   "photoprism-compartido" "2342"  "http"
-
+  for entry in "${SERVICES[@]}"; do
+    IFS='|' read -r domain fwd_host fwd_port scheme adv_cfg <<< "$entry"
+    create_proxy_host "$domain" "$fwd_host" "$fwd_port" "$scheme" "$adv_cfg"
+  done
   echo ""
   log_ok "NPM setup completed!"
-  log_info "Access NPM to activate SSL for hosts that need it: ${NPM_URL}"
 fi
 
-# --- Pi-hole DNS Setup ---
 if [[ "$RUN_DNS" == "true" ]]; then
   echo ""
   echo "--- Pi-hole Local DNS ---"
-
   if pihole_authenticate; then
-    # Trap to ensure session is closed even on error
     trap pihole_logout EXIT
-
-    log_info "Creating Pi-hole DNS entries..."
-    log_info "Resolving all *.casita.local domains to: ${PIHOLE_HOST_IP}"
-    echo ""
-
-    # Infrastructure
-    add_pihole_dns "pihole.casita.local"
-    add_pihole_dns "portainer.casita.local"
-
-    # Media stack
-    add_pihole_dns "radarr.casita.local"
-    add_pihole_dns "sonarr.casita.local"
-    add_pihole_dns "prowlarr.casita.local"
-    add_pihole_dns "bazarr.casita.local"
-    add_pihole_dns "qbit.casita.local"
-    add_pihole_dns "jellyfin.casita.local"
-    add_pihole_dns "tdarr.casita.local"
-
-    # Dashboard + monitoring
-    add_pihole_dns "homepage.casita.local"
-    add_pihole_dns "glances.casita.local"
-    add_pihole_dns "grafana.casita.local"
-
-    # PhotoPrism
-    add_pihole_dns "fotos.casita.local"
-    add_pihole_dns "familia.casita.local"
-
+    for entry in "${SERVICES[@]}"; do
+      IFS='|' read -r domain _ _ _ _ <<< "$entry"
+      add_pihole_dns "$domain"
+    done
     echo ""
     log_ok "Pi-hole DNS setup completed!"
-    log_info "Note: PIHOLE_HOST_IP=${PIHOLE_HOST_IP}"
-    log_info "      Set PIHOLE_HOST_IP in your .env if this is not the correct host IP."
   fi
 fi
 
