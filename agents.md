@@ -16,7 +16,7 @@
 | **Proxy**      | Nginx Proxy Manager (NPM)                               |
 | **Access**     | Via Wireguard only (installed on homelab router)        |
 | **Local DNS**  | Pi-hole                                                 |
-| **DDNS**       | DuckDNS (subdomain: `casitaogrove.duckdns.org`)        |
+| **DDNS**       | DuckDNS (`casitaogrove.duckdns.org`) + Cloudflare CNAME (`*.salvador512.com`) |
 
 ### Network Diagram
 
@@ -221,10 +221,14 @@ include:
   - path: ./new-service/docker-compose.yml
 ```
 
-**2. `proxy/setup-npm-hosts.sh`:**
+**2. `proxy/setup-npm-hosts.sh` (or `proxy/setup_https_and_301_redirects.py`):**
+Add service entry to `SERVICES` list:
 ```bash
-crear_proxy_host "new-service.casita.local" "new-service" "PORT" "http"
+"new-service|new-service|PORT|http|"
 ```
+This automatically configures:
+- Primary HTTPS Proxy Host: `https://new-service.salvador512.com` (SSL forced).
+- Local 301 Redirection Host: `http://new-service.casita.local` -> `301` -> `https://new-service.salvador512.com`.
 
 ### 3.9 Hardware Acceleration (Intel QuickSync)
 
@@ -320,6 +324,19 @@ Comprehensive system and container monitoring stack.
   ```bash
   cat monitoring/dashboards/docker_system_monitoring.json | docker exec -i grafana curl -s -X POST -H "Content-Type: application/json" -u admin:<PASSWORD> http://localhost:3000/api/dashboards/db -d @-
   ```
+
+### 5.8 n8n Workflow Automation 🤖
+
+Workflow automation platform integrated with Telegram bots and AI pipelines.
+
+| Service | Container | HTTPS Domain | HTTP Redirection Domain | Port | Notes |
+|---------|-----------|--------------|-------------------------|------|-------|
+| n8n     | `n8n`     | `https://n8n.salvador512.com` | `http://n8n.casita.local` | 5678 | Requires `user: root` and `WEBHOOK_URL=https://n8n.salvador512.com/` |
+
+#### Key Settings:
+* **User**: `user: root` is required in `n8n/docker-compose.yml` to prevent `EACCES` permission denied errors on SQLite database volume mount.
+* **Volume Mount**: `${DOCKER_DATA_PATH}/n8n:/root/.n8n`.
+* **Webhook & SSL**: `WEBHOOK_URL=https://n8n.salvador512.com/` and `N8N_PROTOCOL=https` allow instant Telegram bot webhook registration over SSL.
 
 ---
 

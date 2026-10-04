@@ -8,3 +8,5 @@ include:
   - path: ./homepage/docker-compose.yml
   - path: ./photoprism/docker-compose.yml
   - path: ./monitoring/docker-compose.yml
+  - path: ./n8n/docker-compose.yml
+

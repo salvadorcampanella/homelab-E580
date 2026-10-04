@@ -5,6 +5,7 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICES_YAML="/home/casita/docker-data/homepage/config/services.yaml"
 
 # --- Logging ---
@@ -20,12 +21,8 @@ echo "  Homepage — API Keys Setup Script"
 echo "============================================"
 echo ""
 
-if [[ ! -f "$SERVICES_YAML" ]]; then
-  log_error "services.yaml not found at: $SERVICES_YAML"
-  exit 1
-fi
-
-log_info "Target file: $SERVICES_YAML"
+log_info "Copying fresh template to target file: $SERVICES_YAML"
+cp "${SCRIPT_DIR}/config/services.yaml.template" "$SERVICES_YAML"
 echo ""
 
 # Helper to extract XML ApiKey using native grep
@@ -47,11 +44,7 @@ PROWLARR_KEY=""
 [[ -n "$PROWLARR_ID" ]] && PROWLARR_KEY=$(get_xml_key "$PROWLARR_ID")
 [[ -n "$PROWLARR_KEY" ]] && log_ok "Prowlarr key: ${PROWLARR_KEY:0:8}..." || log_warn "Prowlarr key not found"
 
-BAZARR_KEY=$(docker exec bazarr python3 -c "
-import yaml
-with open('/config/config/config.yaml') as f:
-    print(yaml.safe_load(f).get('auth',{}).get('apikey',''))
-" 2>/dev/null || true)
+BAZARR_KEY=$(grep -m1 "apikey:" /home/casita/docker-data/arr/bazarr/config/config.yaml 2>/dev/null | awk '{print $2}' || true)
 [[ -n "$BAZARR_KEY" ]] && log_ok "Bazarr key: ${BAZARR_KEY:0:8}..." || log_warn "Bazarr key not found"
 
 # --- 2. Jellyfin API Key ---
@@ -96,11 +89,26 @@ replace_key() {
   fi
 }
 
+# Load .env variables if present
+ENV_FILE="${SCRIPT_DIR}/../.env"
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  source "$ENV_FILE" 2>/dev/null || true
+  set +a
+fi
+
+QBIT_PASS="${QBIT_PASSWORD:-""}"
+PORTAINER_KEY="${PORTAINER_API_KEY:-""}"
+PIHOLE_PASS="${PIHOLE_PASSWORD:-""}"
+
 replace_key "<RADARR_API_KEY>" "$RADARR_KEY"
 replace_key "<SONARR_API_KEY>" "$SONARR_KEY"
 replace_key "<PROWLARR_API_KEY>" "$PROWLARR_KEY"
 replace_key "<BAZARR_API_KEY>" "$BAZARR_KEY"
 replace_key "<JELLYFIN_API_KEY>" "$JELLYFIN_KEY"
+[[ -n "$PIHOLE_PASS" ]] && replace_key "<PIHOLE_API_KEY>" "\"${PIHOLE_PASS}\""
+[[ -n "$QBIT_PASS" ]] && replace_key "<QBIT_PASSWORD>" "\"${QBIT_PASS}\""
+[[ -n "$PORTAINER_KEY" ]] && replace_key "<PORTAINER_API_KEY>" "$PORTAINER_KEY"
 
 # --- 4. Manual Steps Notice ---
 echo ""

@@ -1,0 +1,12 @@
+/* Homepage — Clean Minimal Custom CSS */
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Category header spacing */
+h2, .category-title {
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+}

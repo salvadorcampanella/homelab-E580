@@ -79,7 +79,27 @@ graph TB
     DDNS -.- host
 ```
 
-> ⚡ = Intel QuickSync hardware acceleration enabled
+---
+
+## Environment Setup (`.env`)
+
+Copy `.env.template` to `.env` and fill in your environment variables:
+
+```bash
+cp .env.template .env
+```
+
+### Key Environment Variables & Credentials:
+
+| Variable | Description | How to obtain |
+|---|---|---|
+| `BASE_DOMAIN` | Your primary domain | Purchase domain (e.g. Cloudflare DNS) |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare DNS edit token | Cloudflare > My Profile > API Tokens > Create Token (DNS Edit) |
+| `DUCKDNS_TOKEN` | Dynamic DNS token | DuckDNS.org Account panel |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token | Telegram `@BotFather` > `/newbot` |
+| `GEMINI_API_KEY` | Google Gemini API Key | Google AI Studio > Create API Key |
+| `PAYROLL_SPREADSHEET_ID` | Google Sheets ID | Extract from Sheets URL: `https://docs.google.com/spreadsheets/d/<ID>/edit` |
+| `PAYROLL_DRIVE_FOLDER_ID` | Google Drive Folder ID | Extract from Drive URL: `https://drive.google.com/drive/folders/<ID>` |
 
 ---
 
@@ -114,6 +134,8 @@ homelab-e580/
 ├── homepage/                    # 🏠 Dashboard + Glances (system metrics)
 │   ├── docker-compose.yml
 │   └── config/                  # settings, services, widgets, docker, bookmarks
+├── n8n/                         # ⚡ Workflow automation platform
+│   └── docker-compose.yml
 └── aidlc-docs/                  # 📋 AIDLC analysis artifacts
     └── inception/reverse-engineering/
 ```
@@ -122,30 +144,31 @@ homelab-e580/
 
 ## Active Services
 
-| Service | Container | Host Port | Local Domain |
-|---|---|---|---|
-| Nginx Proxy Manager | `nginx-proxy-manager` | 80, 81, 443 | Homelab entry point |
-| NPM Database | `npm-db` | — | Internal |
-| Pi-hole | `pihole` | 53 (DNS) | `pihole.casita.local` |
-| Portainer | `portainer` | — | `portainer.casita.local` |
-| DuckDNS | `duckdns` | — | Background service (DDNS) |
-| Radarr | `radarr` | — | `radarr.casita.local` |
-| Sonarr | `sonarr` | — | `sonarr.casita.local` |
-| Prowlarr | `prowlarr` | — | `prowlarr.casita.local` |
-| Bazarr | `bazarr` | — | `bazarr.casita.local` |
-| qBittorrent | `qbittorrent` | 6881 (torrents) | `qbit.casita.local` |
-| Jellyfin | `jellyfin` | — | `jellyfin.casita.local` |
-| FlareSolverr | `flaresolverr` | — | Internal (Prowlarr only) |
-| Tdarr | `tdarr` | — | `tdarr.casita.local` |
-| Homepage | `homepage` | — | `homepage.casita.local` |
-| Glances | `glances` | — | `glances.casita.local` |
-| PhotoPrism DB | `photoprism-db` | — | Internal |
-| PhotoPrism Personal | `photoprism-personal` | — | `fotos.casita.local` |
-| PhotoPrism Shared | `photoprism-compartido` | — | `familia.casita.local` |
-| Grafana | `grafana` | — | `grafana.casita.local` |
-| Prometheus | `prometheus` | — | Internal |
-| Node Exporter | `node-exporter` | — | Internal |
-| cAdvisor | `cadvisor` | — | Internal |
+| Service | Container | Host Port | Primary HTTPS Domain | Local 301 Redirection Domain |
+|---|---|---|---|---|
+| Nginx Proxy Manager | `nginx-proxy-manager` | 80, 81, 443 | `https://npm.salvador512.com` | `http://npm.casita.local` |
+| NPM Database | `npm-db` | — | Internal | Internal |
+| Pi-hole | `pihole` | 53 (DNS) | `https://pihole.salvador512.com` | `http://pihole.casita.local` |
+| Portainer | `portainer` | — | `https://portainer.salvador512.com` | `http://portainer.casita.local` |
+| DuckDNS | `duckdns` | — | Background service (DDNS) | Background service (DDNS) |
+| Radarr | `radarr` | — | `https://radarr.salvador512.com` | `http://radarr.casita.local` |
+| Sonarr | `sonarr` | — | `https://sonarr.salvador512.com` | `http://sonarr.casita.local` |
+| Prowlarr | `prowlarr` | — | `https://prowlarr.salvador512.com` | `http://prowlarr.casita.local` |
+| Bazarr | `bazarr` | — | `https://bazarr.salvador512.com` | `http://bazarr.casita.local` |
+| qBittorrent | `qbittorrent` | 6881 (torrents) | `https://qbit.salvador512.com` | `http://qbit.casita.local` |
+| Jellyfin | `jellyfin` | — | `https://jellyfin.salvador512.com` | `http://jellyfin.casita.local` |
+| FlareSolverr | `flaresolverr` | — | Internal (Prowlarr only) | Internal (Prowlarr only) |
+| Tdarr | `tdarr` | — | `https://tdarr.salvador512.com` | `http://tdarr.casita.local` |
+| Homepage | `homepage` | — | `https://homepage.salvador512.com` | `http://homepage.casita.local` |
+| Glances | `glances` | — | `https://glances.salvador512.com` | `http://glances.casita.local` |
+| PhotoPrism DB | `photoprism-db` | — | Internal | Internal |
+| PhotoPrism Personal | `photoprism-personal` | — | `https://fotos.salvador512.com` | `http://fotos.casita.local` |
+| PhotoPrism Shared | `photoprism-compartido` | — | `https://familia.salvador512.com` | `http://familia.casita.local` |
+| Grafana | `grafana` | — | `https://grafana.salvador512.com` | `http://grafana.casita.local` |
+| Prometheus | `prometheus` | — | Internal | Internal |
+| Node Exporter | `node-exporter` | — | Internal | Internal |
+| cAdvisor | `cadvisor` | — | Internal | Internal |
+| n8n | `n8n` | — | `https://n8n.salvador512.com` | `http://n8n.casita.local` |
 
 ---
 

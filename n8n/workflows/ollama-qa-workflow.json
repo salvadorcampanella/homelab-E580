@@ -1,0 +1,180 @@
+{
+  "name": "Ollama AI Assistant (192.168.0.118)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger-001",
+      "name": "Manual Trigger (Test)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ollama-ask",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger-002",
+      "name": "Webhook (POST /ollama-ask)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        360
+      ],
+      "webhookId": "ollama-ask-webhook"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "chat-trigger-003",
+      "name": "Chat Trigger (n8n UI)",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normaliza los parámetros de entrada según el origen (Chat, Webhook o Manual)\nconst incoming = $input.first().json;\n\nlet prompt = \"¿Qué servicios están corriendo en nuestro homelab y cómo puedes ayudarme?\";\nlet systemPrompt = \"Eres un asistente inteligente de Homelab. Responde en español de forma concisa, estructurada y precisa.\";\nlet model = \"qwen2.5:3b\";\nlet temperature = 0.7;\nlet maxTokens = 300;\nlet keepAlive = \"1h\";\nlet source = \"manual\";\n\n// Si viene de Webhook (POST body)\nif (incoming.body) {\n  prompt = incoming.body.prompt || incoming.body.question || incoming.body.message || prompt;\n  systemPrompt = incoming.body.system || systemPrompt;\n  model = incoming.body.model || model;\n  temperature = incoming.body.temperature !== undefined ? incoming.body.temperature : temperature;\n  maxTokens = incoming.body.max_tokens || incoming.body.num_predict || maxTokens;\n  keepAlive = incoming.body.keep_alive || keepAlive;\n  source = \"webhook\";\n}\n// Si viene del Chat Trigger de n8n\nelse if (incoming.chatInput) {\n  prompt = incoming.chatInput;\n  source = \"chat\";\n}\n// Si viene con un campo directo (ej. prompt o question en JSON manual)\nelse if (incoming.prompt || incoming.question) {\n  prompt = incoming.prompt || incoming.question;\n  systemPrompt = incoming.system || systemPrompt;\n  model = incoming.model || model;\n}\n\nreturn [{\n  json: {\n    ollama_url: \"http://192.168.0.118:11434/api/generate\",\n    source: source,\n    requestPayload: {\n      model: model,\n      prompt: prompt,\n      system: systemPrompt,\n      stream: false,\n      keep_alive: keepAlive,\n      options: {\n        temperature: temperature,\n        num_predict: maxTokens\n      }\n    },\n    startTime: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "code-prep-004",
+      "name": "Prepare Prompt & Params",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ollama_url }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestPayload) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "http-ollama-005",
+      "name": "Ollama API (192.168.0.118)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepData = $('Prepare Prompt & Params').first().json;\nconst ollamaResponse = $input.first().json;\n\nconst totalDurationMs = ollamaResponse.total_duration ? (ollamaResponse.total_duration / 1e6).toFixed(2) : null;\nconst evalDurationMs = ollamaResponse.eval_duration ? (ollamaResponse.eval_duration / 1e6).toFixed(2) : null;\nconst evalCount = ollamaResponse.eval_count || 0;\nconst tokensPerSec = evalDurationMs && evalDurationMs > 0 ? ((evalCount / (evalDurationMs / 1000))).toFixed(1) : null;\n\nconst cleanOutput = {\n  success: true,\n  source: prepData.source,\n  question: prepData.requestPayload.prompt,\n  answer: ollamaResponse.response,\n  model: ollamaResponse.model || prepData.requestPayload.model,\n  created_at: ollamaResponse.created_at,\n  metrics: {\n    total_duration_ms: totalDurationMs,\n    eval_tokens: evalCount,\n    tokens_per_second: tokensPerSec\n  }\n};\n\nreturn [{ json: cleanOutput }];"
+      },
+      "id": "code-format-006",
+      "name": "Format Response & Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-webhook-007",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1220,
+        360
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger (Test)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Prompt & Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook (POST /ollama-ask)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Prompt & Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Trigger (n8n UI)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Prompt & Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Prompt & Params": {
+      "main": [
+        [
+          {
+            "node": "Ollama API (192.168.0.118)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama API (192.168.0.118)": {
+      "main": [
+        [
+          {
+            "node": "Format Response & Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response & Metrics": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

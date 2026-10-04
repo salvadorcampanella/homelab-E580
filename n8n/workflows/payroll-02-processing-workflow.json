@@ -1,0 +1,345 @@
+{
+  "name": "Casita Payroll - 02 Extract, Gemini AI & Consolidate",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-manual-001",
+      "name": "Manual / Scheduled Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        180,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "<YOUR_SPREADSHEET_ID>",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Control_Aprobacion",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "sheets-read-pending-002",
+      "name": "Read Control_Aprobacion",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        400,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "T7TrSwZBGrQroasq",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filtra registros aprobados tolerando cualquier formato (TRUE, VERDADERO, checkbox, texto tabulado)\nconst items = $input.all();\nconst pendingItems = [];\n\nfunction isTruthy(val) {\n  if (val === true || val === 1) return true;\n  if (!val) return false;\n  const s = String(val).trim().toUpperCase();\n  return s === 'TRUE' || s === 'VERDADERO' || s === '1' || s === 'SI' || s === 'SÍ' || s === 'V' || s === 'OK' || s === 'CHECKED';\n}\n\nfunction isProcessed(val) {\n  if (val === true || val === 1) return true;\n  if (!val) return false;\n  const s = String(val).trim().toUpperCase();\n  return s === 'TRUE' || s === 'VERDADERO' || s === '1';\n}\n\nfor (let i = 0; i < items.length; i++) {\n  let row = items[i].json || {};\n  \n  const keys = Object.keys(row);\n  if (keys.length === 1 && (keys[0].includes('\\t') || String(row[keys[0]]).includes('\\t'))) {\n    const rawHeaders = keys[0].split('\\t').map(h => h.trim());\n    const rawValues = String(row[keys[0]]).split('\\t').map(v => v.trim());\n    const reconstructed = {};\n    for (let j = 0; j < rawHeaders.length; j++) {\n      reconstructed[rawHeaders[j]] = rawValues[j] || '';\n    }\n    row = reconstructed;\n  }\n  \n  let messageId = '';\n  let approvedVal = null;\n  let processedVal = null;\n  let attachmentName = '';\n  \n  for (const [k, v] of Object.entries(row)) {\n    const cleanKey = k.trim().toLowerCase();\n    if (cleanKey === 'id_mensaje' || cleanKey.includes('mensaje')) messageId = String(v).trim();\n    if (cleanKey === 'aprobado' || cleanKey.includes('aprobado')) approvedVal = v;\n    if (cleanKey === 'procesado' || cleanKey.includes('procesado')) processedVal = v;\n    if (cleanKey === 'nombre_adjunto' || cleanKey.includes('adjunto')) attachmentName = String(v).trim();\n  }\n  \n  if (!messageId && keys.length > 0) {\n    const firstVal = String(row[keys[0]]).trim();\n    if (/^[a-f0-9]{16}$/i.test(firstVal)) {\n      messageId = firstVal;\n    }\n  }\n\n  if (messageId && isTruthy(approvedVal) && !isProcessed(processedVal)) {\n    pendingItems.push({\n      json: {\n        ...row,\n        ID_Mensaje: messageId,\n        Nombre_Adjunto: attachmentName || row.Nombre_Adjunto || 'Nomina.zip',\n        _rowIndex: i + 2\n      }\n    });\n  }\n}\n\nreturn pendingItems;"
+      },
+      "id": "code-filter-approved-003",
+      "name": "Filter (Aprobado == TRUE & Procesado == FALSE)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://gmail.googleapis.com/gmail/v1/users/me/messages/{{ $json.ID_Mensaje }}?format=raw",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "gmail-get-raw-http-004",
+      "name": "Download Raw Email via Gmail API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        840,
+        300
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "FGWeyO1J8XPqMCjk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const zlib = require('zlib');\n\n// --- MOTOR CRIPTOGRÁFICO PKWARE ZIPCRYPTO ---\nfunction makeCrcTable() {\n  const table = new Int32Array(256);\n  for (let n = 0; n < 256; n++) {\n    let c = n;\n    for (let k = 0; k < 8; k++) {\n      c = (c & 1) ? (-306674912 ^ (c >>> 1)) : (c >>> 1); \n    }\n    table[n] = c;\n  }\n  return table;\n}\nconst crcTable = makeCrcTable();\nfunction crc32Update(crc, b) {\n  return (crc >>> 8) ^ crcTable[(crc ^ b) & 0xff];\n}\n\nclass ZipCrypto {\n  constructor(password) {\n    this.key0 = 305419896;\n    this.key1 = 591751049;\n    this.key2 = 878082192;\n    for (let i = 0; i < password.length; i++) {\n      this.updateKeys(password.charCodeAt(i));\n    }\n  }\n  updateKeys(c) {\n    this.key0 = crc32Update(this.key0, c);\n    this.key1 = Math.imul(this.key1 + (this.key0 & 0xff), 134775813) + 1 | 0;\n    this.key2 = crc32Update(this.key2, (this.key1 >>> 24) & 0xff);\n  }\n  decryptByte(c) {\n    const temp = (this.key2 & 0xffff) | 2;\n    const k = Math.imul(temp, temp ^ 1) >>> 8 & 0xff;\n    const p = c ^ k;\n    this.updateKeys(p);\n    return p;\n  }\n  decryptBuffer(buf) {\n    const out = Buffer.alloc(buf.length);\n    for (let i = 0; i < buf.length; i++) {\n      out[i] = this.decryptByte(buf[i]);\n    }\n    return out;\n  }\n}\n\nfunction extractZipBufferFromMime(rawString) {\n  let mimeText = rawString;\n  if (!rawString.includes('Content-Type') && !rawString.includes('Received:')) {\n    mimeText = Buffer.from(rawString.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8');\n  }\n\n  // 1. Buscar partes MIME delimitadas por boundaries\n  const parts = mimeText.split(/--[^\\r\\n]+/);\n  for (const part of parts) {\n    if (/content-transfer-encoding:\\s*base64/i.test(part) || /filename=[^\\r\\n]+\\.zip/i.test(part) || /application\\/(?:x-)?zip/i.test(part)) {\n      const lines = part.split(/\\r?\\n/);\n      let isBody = false;\n      let b64Lines = [];\n      for (const line of lines) {\n        if (isBody) {\n          const trimmed = line.trim();\n          if (trimmed.length > 0 && /^[A-Za-z0-9+/=]+$/.test(trimmed)) {\n            b64Lines.push(trimmed);\n          }\n        } else if (line.trim() === '') {\n          isBody = true;\n        }\n      }\n      if (b64Lines.length > 0) {\n        const buf = Buffer.from(b64Lines.join(''), 'base64');\n        if (buf.length > 30 && buf.readUInt32LE(0) === 0x04034b50) {\n          return buf;\n        }\n      }\n    }\n  }\n\n  // 2. Búsqueda directa de bloques Base64 que inicien con firma ZIP (UEsDB)\n  const matches = mimeText.match(/(?:UEsDB[A-Za-z0-9+/=\\r\\n]{100,})/g);\n  if (matches) {\n    for (const m of matches) {\n      const buf = Buffer.from(m.replace(/[\\r\\n\\s]/g, ''), 'base64');\n      if (buf.length > 30 && buf.readUInt32LE(0) === 0x04034b50) {\n        return buf;\n      }\n    }\n  }\n\n  return null;\n}\n\nconst items = $input.all();\nconst filterItems = $('Filter (Aprobado == TRUE & Procesado == FALSE)').all();\nconst outputItems = [];\nconst password = process.env.ZIP_PASSWORD || '<YOUR_ZIP_PASSWORD>';\n\nfor (let idx = 0; idx < items.length; idx++) {\n  const item = items[idx];\n  const rowMeta = filterItems[idx] ? filterItems[idx].json : (item.json || {});\n  const rawData = (item.json && item.json.raw) ? item.json.raw : '';\n  \n  if (!rawData) {\n    throw new Error(`No se pudo obtener el cuerpo crudo del correo ${rowMeta.ID_Mensaje}`);\n  }\n\n  const zipBuffer = extractZipBufferFromMime(rawData);\n  if (!zipBuffer) {\n    throw new Error(`No se encontró el fichero ZIP dentro del correo crudo ${rowMeta.ID_Mensaje}`);\n  }\n\n  let offset = 0;\n  let extractedPdfBuffer = null;\n  let extractedFilename = 'Nomina.pdf';\n\n  while (offset < zipBuffer.length - 30) {\n    const signature = zipBuffer.readUInt32LE(offset);\n    if (signature !== 0x04034b50) {\n      offset++;\n      continue;\n    }\n    const flags = zipBuffer.readUInt16LE(offset + 6);\n    const compMethod = zipBuffer.readUInt16LE(offset + 8);\n    const compSize = zipBuffer.readUInt32LE(offset + 18);\n    const fnLen = zipBuffer.readUInt16LE(offset + 26);\n    const extraLen = zipBuffer.readUInt16LE(offset + 28);\n    const filename = zipBuffer.toString('utf8', offset + 30, offset + 30 + fnLen);\n    const dataOffset = offset + 30 + fnLen + extraLen;\n    const isEncrypted = (flags & 0x0001) !== 0;\n\n    let payload = zipBuffer.subarray(dataOffset, dataOffset + compSize);\n    if (isEncrypted) {\n      const cipher = new ZipCrypto(password);\n      const decrypted = cipher.decryptBuffer(payload);\n      payload = decrypted.subarray(12);\n    }\n\n    let uncompressed;\n    try {\n      if (compMethod === 8) {\n        uncompressed = zlib.inflateRawSync(payload);\n      } else if (compMethod === 0) {\n        uncompressed = payload;\n      } else {\n        throw new Error(`Método de compresión no soportado: ${compMethod}`);\n      }\n    } catch (err) {\n      throw new Error(`Error al descomprimir ${filename} (posible contraseña incorrecta o archivo corrupto): ${err.message}`);\n    }\n\n    extractedPdfBuffer = uncompressed;\n    extractedFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;\n    break;\n  }\n\n  if (!extractedPdfBuffer) {\n    throw new Error(`No se pudo extraer el PDF dentro del ZIP de ${rowMeta.ID_Mensaje}.`);\n  }\n\n  const base64Pdf = extractedPdfBuffer.toString('base64');\n\n  outputItems.push({\n    json: {\n      ...rowMeta,\n      extracted_filename: extractedFilename,\n      pdf_base64: base64Pdf\n    },\n    binary: {\n      data: {\n        data: base64Pdf,\n        mimeType: 'application/pdf',\n        fileName: extractedFilename\n      }\n    }\n  });\n}\n\nreturn outputItems;"
+      },
+      "id": "code-decompress-zip-005",
+      "name": "Decompress Password ZIP (In-Memory)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "name": "={{ $json.extracted_filename }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "<YOUR_DRIVE_FOLDER_ID>",
+          "mode": "id"
+        },
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "id": "drive-upload-pdf-006",
+      "name": "Upload PDF to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1280,
+        300
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "qOj3iuA2a9JvElXR",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"system_instruction\": {\n    \"parts\": [\n      {\n        \"text\": \"You are an expert accounting analyst specializing in Spanish payroll slips. Extract all financial amounts from the attached salary slip with mathematical precision. Return exclusively the requested JSON structure without codeblock formatting or extra explanations.\"\n      }\n    ]\n  },\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"inline_data\": {\n            \"mime_type\": \"application/pdf\",\n            \"data\": \"{{ $('Decompress Password ZIP (In-Memory)').item.json.pdf_base64 }}\"\n          }\n        },\n        {\n          \"text\": \"Extract financial amounts and metadata from this payroll slip adhering strictly to the JSON schema provided.\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"response_mime_type\": \"application/json\",\n    \"response_schema\": {\n      \"type\": \"OBJECT\",\n      \"properties\": {\n        \"anio\": { \"type\": \"INTEGER\" },\n        \"mes\": { \"type\": \"STRING\" },\n        \"tipo_nomina\": { \"type\": \"STRING\", \"enum\": [\"Mensual\", \"Extra\", \"Atrasos\", \"Finiquito\"] },\n        \"total_devengado_bruto\": { \"type\": \"NUMBER\" },\n        \"aportaciones_ss_trabajador\": { \"type\": \"NUMBER\" },\n        \"porcentaje_irpf\": { \"type\": \"NUMBER\" },\n        \"importe_irpf\": { \"type\": \"NUMBER\" },\n        \"liquido_percibir_neto\": { \"type\": \"NUMBER\" }\n      },\n      \"required\": [\"anio\", \"mes\", \"tipo_nomina\", \"total_devengado_bruto\", \"aportaciones_ss_trabajador\", \"porcentaje_irpf\", \"importe_irpf\", \"liquido_percibir_neto\"]\n    }\n  }\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "gemini-extract-007",
+      "name": "Gemini 1.5 Pro (Structured Extraction)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiRaw = $input.first().json;\nconst driveFile = $('Upload PDF to Drive').first().json;\nconst rowData = $('Decompress Password ZIP (In-Memory)').first().json;\n\nlet rawText = '';\nif (geminiRaw.candidates && geminiRaw.candidates[0] && geminiRaw.candidates[0].content && geminiRaw.candidates[0].content.parts) {\n  for (const p of geminiRaw.candidates[0].content.parts) {\n    if (p.text && p.text.trim().startsWith('{')) {\n      rawText = p.text;\n      break;\n    }\n    if (p.text && !p.thought) {\n      rawText = p.text;\n    }\n  }\n  if (!rawText && geminiRaw.candidates[0].content.parts[0]) {\n    rawText = geminiRaw.candidates[0].content.parts[0].text || '';\n  }\n}\n\nlet parsedGemini = {};\ntry {\n  const cleanJson = rawText.replace(/^```json\\s*/i, '').replace(/```\\s*$/i, '').trim();\n  parsedGemini = JSON.parse(cleanJson);\n} catch (e) {\n  throw new Error(`Error parseando JSON de Gemini Pro: ${e.message}. Texto recibido: ${rawText}`);\n}\n\nconst formattedMonth = String(parsedGemini.mes || '').padStart(2, '0');\nconst year = String(parsedGemini.anio || new Date().getFullYear());\nconst viewLink = driveFile.webViewLink || `https://drive.google.com/file/d/${driveFile.id}/view`;\n\nreturn [{\n  json: {\n    ID_Mensaje: rowData.ID_Mensaje,\n    Procesado: true,\n    _target_sheet: year,\n    'Mes': parsedGemini.mes,\n    'Tipo': parsedGemini.tipo_nomina,\n    'Total Bruto (€)': Number(parsedGemini.total_devengado_bruto || 0),\n    'Aportación SS (€)': Number(parsedGemini.aportaciones_ss_trabajador || 0),\n    '% IRPF': Number(parsedGemini.porcentaje_irpf || 0),\n    'Retención IRPF (€)': Number(parsedGemini.importe_irpf || 0),\n    'Líquido Neto (€)': Number(parsedGemini.liquido_percibir_neto || 0),\n    'Enlace Drive PDF': viewLink\n  }\n}];"
+      },
+      "id": "code-parse-gemini-008",
+      "name": "Format Data & Build Year Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1720,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "<YOUR_SPREADSHEET_ID>",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $json._target_sheet }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Mes"
+          ]
+        },
+        "options": {}
+      },
+      "id": "sheets-append-year-009",
+      "name": "Append to Year Tab (eg. 2019, 2020...)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1940,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "T7TrSwZBGrQroasq",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "<YOUR_SPREADSHEET_ID>",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Control_Aprobacion",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "ID_Mensaje"
+          ]
+        },
+        "options": {}
+      },
+      "id": "sheets-update-control-010",
+      "name": "Update Control_Aprobacion (Procesado=TRUE)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2160,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "T7TrSwZBGrQroasq",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual / Scheduled Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Control_Aprobacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Control_Aprobacion": {
+      "main": [
+        [
+          {
+            "node": "Filter (Aprobado == TRUE & Procesado == FALSE)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter (Aprobado == TRUE & Procesado == FALSE)": {
+      "main": [
+        [
+          {
+            "node": "Download Raw Email via Gmail API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Raw Email via Gmail API": {
+      "main": [
+        [
+          {
+            "node": "Decompress Password ZIP (In-Memory)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decompress Password ZIP (In-Memory)": {
+      "main": [
+        [
+          {
+            "node": "Upload PDF to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload PDF to Drive": {
+      "main": [
+        [
+          {
+            "node": "Gemini 1.5 Pro (Structured Extraction)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 1.5 Pro (Structured Extraction)": {
+      "main": [
+        [
+          {
+            "node": "Format Data & Build Year Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Data & Build Year Row": {
+      "main": [
+        [
+          {
+            "node": "Append to Year Tab (eg. 2019, 2020...)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Year Tab (eg. 2019, 2020...)": {
+      "main": [
+        [
+          {
+            "node": "Update Control_Aprobacion (Procesado=TRUE)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

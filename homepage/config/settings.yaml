@@ -7,9 +7,6 @@ description: Personal homelab control panel
 # Interface language
 language: en
 
-# Theme & Color: Omitted to unlock ALL interactive UI customization controls
-# (Unlocks light/dark theme toggle and color palette selector in footer)
-
 # Clean status indicators (colored dots)
 statusStyle: dot
 
@@ -22,31 +19,20 @@ showStats: true
 # Favicon icon
 favicon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homepage.png
 
-# Background: dark gradient (no external image)
-background:
-  image: ""
-  blur: sm
-  saturate: 50
-  brightness: 50
-  opacity: 50
-
 # Top bar style
 headerStyle: clean
 
-# Default column layout
+# Standard layout configuration
 layout:
   System Overview:
     style: row
+    columns: 3
+  Live:
+    style: row
     columns: 2
-  Infrastructure:
+  Infrastructure & Automation:
+    style: row
+    columns: 2
+  Media Center:
     style: row
     columns: 3
-  Media:
-    style: row
-    columns: 3
-  Downloads:
-    style: row
-    columns: 2
-  Other:
-    style: row
-    columns: 2

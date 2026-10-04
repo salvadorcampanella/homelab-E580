@@ -1,0 +1,165 @@
+{
+  "name": "Casita Payroll - 01 Inventory & Control (Gmail to Sheets)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-manual-001",
+      "name": "Manual Trigger (Start Indexing)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "<YOUR_SPREADSHEET_ID>",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Control_Aprobacion",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "sheets-get-control-002",
+      "name": "Get Existing Control_Aprobacion Rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        480,
+        180
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "T7TrSwZBGrQroasq",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 500,
+        "simple": false,
+        "filters": {
+          "q": "subject:\"Envío Hojas de Salario\" has:attachment filename:zip after:2019/01/01"
+        },
+        "options": {}
+      },
+      "id": "gmail-search-003",
+      "name": "Gmail Search Historical Payrolls",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        420
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "FGWeyO1J8XPqMCjk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normaliza correos y deduplica contra las filas existentes leídas de Google Sheets\nconst gmailMessages = $('Gmail Search Historical Payrolls').all();\nlet existingSheetItems = [];\ntry {\n  existingSheetItems = $('Get Existing Control_Aprobacion Rows').all();\n} catch (e) {\n  existingSheetItems = [];\n}\n\nconst existingIds = new Set();\nfor (const item of existingSheetItems) {\n  const row = item.json || {};\n  if (row.ID_Mensaje && !item.json.error) {\n    existingIds.add(String(row.ID_Mensaje).trim());\n  }\n}\n\nfunction formatSender(raw) {\n  if (!raw) return '';\n  if (typeof raw === 'string') return raw;\n  if (typeof raw === 'object') {\n    if (raw.text) return String(raw.text);\n    if (raw.value && Array.isArray(raw.value) && raw.value.length > 0) {\n      const v = raw.value[0];\n      return v.name ? `${v.name} <${v.address}>` : (v.address || '');\n    }\n    if (raw.name && raw.address) return `${raw.name} <${raw.address}>`;\n    if (raw.address) return String(raw.address);\n    if (raw.name) return String(raw.name);\n    if (raw.email) return String(raw.email);\n  }\n  return String(raw);\n}\n\nfunction extractHeader(msg, key) {\n  const target = key.toLowerCase();\n  \n  // 1. Cabeceras en msg.payload.headers (Gmail API estándar)\n  if (msg.payload && Array.isArray(msg.payload.headers)) {\n    const found = msg.payload.headers.find(h => h && h.name && h.name.toLowerCase() === target);\n    if (found && found.value) return found.value;\n  }\n  \n  // 2. Cabeceras en msg.headers\n  if (msg.headers && typeof msg.headers === 'object') {\n    if (Array.isArray(msg.headers)) {\n      const found = msg.headers.find(h => h && h.name && h.name.toLowerCase() === target);\n      if (found && found.value) return found.value;\n    } else {\n      for (const [k, v] of Object.entries(msg.headers)) {\n        if (k.toLowerCase() === target) return typeof v === 'object' ? formatSender(v) : String(v);\n      }\n    }\n  }\n  \n  // 3. Propiedad de primer nivel\n  if (msg[target] !== undefined) return typeof msg[target] === 'object' ? formatSender(msg[target]) : String(msg[target]);\n  \n  return '';\n}\n\nfunction findAttachments(msg) {\n  const list = [];\n  \n  // A. attachments planos de n8n\n  if (Array.isArray(msg.attachments)) {\n    for (const a of msg.attachments) {\n      const name = a.filename || a.name || '';\n      if (name) {\n        list.push({\n          id: a.id || a.attachmentId || (a.body && a.body.attachmentId) || msg.id,\n          filename: name\n        });\n      }\n    }\n  }\n  \n  // B. Recorrido recursivo en payload.parts\n  function walk(parts) {\n    if (!parts || !Array.isArray(parts)) return;\n    for (const p of parts) {\n      const fn = p.filename || p.name || '';\n      const attId = p.body ? (p.body.attachmentId || p.body.id) : null;\n      if (fn) {\n        list.push({\n          id: attId || p.partId || msg.id,\n          filename: fn\n        });\n      }\n      if (p.parts && Array.isArray(p.parts)) {\n        walk(p.parts);\n      }\n    }\n  }\n  \n  if (msg.payload) {\n    if (msg.payload.filename) {\n      list.push({\n        id: (msg.payload.body && msg.payload.body.attachmentId) || msg.id,\n        filename: msg.payload.filename\n      });\n    }\n    if (msg.payload.parts) {\n      walk(msg.payload.parts);\n    }\n  }\n  \n  return list;\n}\n\nconst newRows = [];\nfor (const msgItem of gmailMessages) {\n  const msg = msgItem.json || {};\n  const messageId = String(msg.id || msg.threadId || '').trim();\n  if (!messageId || existingIds.has(messageId)) continue;\n\n  let dateStr = '';\n  if (msg.internalDate) {\n    try { dateStr = new Date(parseInt(msg.internalDate)).toISOString().split('T')[0]; } catch (e) {}\n  }\n  if (!dateStr) dateStr = extractHeader(msg, 'date') || msg.date || new Date().toISOString().split('T')[0];\n\n  const from = extractHeader(msg, 'from') || 'Gestoría';\n  const subject = extractHeader(msg, 'subject') || 'Envío Hojas de Salario';\n  \n  const discoveredAttachments = findAttachments(msg);\n  // Filtrar ficheros .zip o tomar el primero si no hay extensión explícita\n  const zipAttachments = discoveredAttachments.filter(a => a.filename.toLowerCase().endsWith('.zip'));\n  const targetAttachments = zipAttachments.length > 0 ? zipAttachments : (discoveredAttachments.length > 0 ? discoveredAttachments : [{\n    id: messageId,\n    filename: 'Nomina.zip'\n  }]);\n\n  for (const att of targetAttachments) {\n    existingIds.add(messageId);\n    newRows.push({\n      json: {\n        ID_Mensaje: messageId,\n        Fecha_Correo: dateStr,\n        Remitente: from,\n        Asunto: subject,\n        Nombre_Adjunto: att.filename,\n        ID_Adjunto: att.id,\n        Aprobado: false,\n        Procesado: false\n      }\n    });\n  }\n}\n\nreturn newRows;"
+      },
+      "id": "code-filter-004",
+      "name": "Normalize & Filter Duplicates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "<YOUR_SPREADSHEET_ID>",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Control_Aprobacion",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "ID_Mensaje"
+          ]
+        },
+        "options": {}
+      },
+      "id": "sheets-append-005",
+      "name": "Append to Control_Aprobacion",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1040,
+        420
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "T7TrSwZBGrQroasq",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger (Start Indexing)": {
+      "main": [
+        [
+          {
+            "node": "Get Existing Control_Aprobacion Rows",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail Search Historical Payrolls",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Search Historical Payrolls": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Filter Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize & Filter Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Append to Control_Aprobacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

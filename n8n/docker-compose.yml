@@ -1,0 +1,36 @@
+# n8n — Workflow Automation Service
+# Access via NPM: http://n8n.casita.local
+
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n
+    user: root
+    restart: unless-stopped
+    environment:
+      - N8N_HOST=n8n.salvador512.com
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://n8n.salvador512.com/
+      - N8N_SECURE_COOKIE=true
+      - GENERIC_TIMEZONE=${TZ:-Europe/Madrid}
+      - TZ=${TZ:-Europe/Madrid}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - NODE_FUNCTION_ALLOW_BUILTIN=*
+      - NODE_FUNCTION_ALLOW_EXTERNAL=*
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+    volumes:
+      - ${DOCKER_DATA_PATH}/n8n:/root/.n8n
+    networks:
+      - proxy-nw
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+networks:
+  proxy-nw:
+    external: true
