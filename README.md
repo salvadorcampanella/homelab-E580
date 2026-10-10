@@ -183,17 +183,28 @@ The homelab includes two production-grade, pre-configured Grafana SRE Dashboards
    - **Container Metrics & Rankings**: Running containers, Container Restart tracking, Top 5 Rankings (CPU %, RAM Working Set, Network Traffic), and per-container real-time metrics with dynamic `$container` dropdown filter.
    - **Cross-dashboard navigation**: Built-in header links to switch between Host and Docker views instantly.
 
-### Automated Telegram Alerting:
-- **Disk Space Warning (> 85%)**: Alerts via Telegram bot if any partition (`/`, `/home`, `/mnt/ev_deluxe`) exceeds 85% for 5 minutes.
-- **Disk Space Critical (> 95%)**: High-priority alert if any partition exceeds 95% for 2 minutes.
-- **Notification Policy**: Default receiver configured to `Telegram-Alerts`.
+### Automated Telegram Alerting (10 SRE Rules):
+The homelab includes 10 production-grade alert rules declaratively defined in [`monitoring/alerting/homelab_alerts.json`](monitoring/alerting/homelab_alerts.json), all routed directly to your Telegram bot via the `Telegram-Alerts` contact point:
 
-### How to Provision / Sync Dashboards:
-Run the automated upload script (reads credentials directly from `.env`):
+| Category | Alert Rule | Threshold / Condition | Severity |
+|---|---|---|---|
+| **Storage** | **Disk Space Warning** | Any disk (`/`, `/home`, `/mnt/ev_deluxe`) > 85% for 5m | `warning` |
+| **Storage** | **Disk Space Critical** | Any disk > 95% for 2m | `critical` |
+| **Storage** | **Disk Inodes Exhaustion** | Inode usage > 85% for 5m | `warning` |
+| **Storage** | **Disk I/O Saturation** | Disk active time (`sda`, `sdd`) > 90% for 10m | `warning` |
+| **Host** | **Host RAM High Usage** | Host RAM utilization > 90% for 5m (prevents OOM-killer) | `warning` |
+| **Host** | **Host Swap Exhaustion** | Swap utilization > 80% for 5m (prevents system freeze) | `critical` |
+| **Host** | **Host CPU High Temperature** | Laptop CPU package temp > 80°C for 3m (prevents throttling) | `warning` |
+| **Host** | **Host CPU Load Overload** | 1-minute load average > 6.0 for 10m | `warning` |
+| **Containers** | **Container CrashLooping** | Container restarts > 3 times in 15m | `critical` |
+| **Containers** | **Core Service Down** | Core container (NPM, Pi-hole, Grafana, Radarr, Sonarr, Jellyfin) down > 60s | `critical` |
+
+### How to Provision / Sync Dashboards & Alerts:
+Run the unified automation script (reads credentials directly from `.env` and detects Grafana IP dynamically):
 ```bash
 python3 monitoring/upload_dashboards.py
 ```
-Or import either JSON file manually in Grafana under **Dashboards** > **New** > **Import**.
+This single command provisions both dashboards, creates all 10 alert rules, and configures Telegram as the default notification policy.
 
 ---
 

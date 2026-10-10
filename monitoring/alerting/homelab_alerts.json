@@ -1,0 +1,118 @@
+{
+  "folder": {
+    "uid": "homelab-alerts",
+    "title": "Homelab Alerts"
+  },
+  "policy": {
+    "receiver": "Telegram-Alerts",
+    "group_by": [
+      "grafana_folder",
+      "alertname"
+    ],
+    "group_wait": "30s",
+    "group_interval": "5m",
+    "repeat_interval": "4h"
+  },
+  "rules": [
+    {
+      "uid": "disk-space-warning",
+      "title": "Disk Space Warning (> 85%)",
+      "ruleGroup": "Storage",
+      "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=~\"/|/home|/mnt/ev_deluxe\"} * 100) / node_filesystem_size_bytes{mountpoint=~\"/|/home|/mnt/ev_deluxe\"})",
+      "threshold": 85,
+      "for": "5m",
+      "severity": "warning",
+      "summary": "Disk {{ $labels.mountpoint }} is at {{ $values.B.Value | printf \"%.1f\" }}% capacity (WARNING)"
+    },
+    {
+      "uid": "disk-space-critical",
+      "title": "Disk Space Critical (> 95%)",
+      "ruleGroup": "Storage",
+      "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=~\"/|/home|/mnt/ev_deluxe\"} * 100) / node_filesystem_size_bytes{mountpoint=~\"/|/home|/mnt/ev_deluxe\"})",
+      "threshold": 95,
+      "for": "2m",
+      "severity": "critical",
+      "summary": "🚨 CRITICAL: Disk {{ $labels.mountpoint }} is almost full ({{ $values.B.Value | printf \"%.1f\" }}%)"
+    },
+    {
+      "uid": "disk-inodes-warning",
+      "title": "Disk Inodes Exhaustion (> 85%)",
+      "ruleGroup": "Storage",
+      "expr": "100 - ((node_filesystem_files_free{mountpoint=~\"/|/home|/mnt/ev_deluxe\"} * 100) / node_filesystem_files{mountpoint=~\"/|/home|/mnt/ev_deluxe\"})",
+      "threshold": 85,
+      "for": "5m",
+      "severity": "warning",
+      "summary": "Disk inodes for {{ $labels.mountpoint }} reached {{ $values.B.Value | printf \"%.1f\" }}% utilization"
+    },
+    {
+      "uid": "disk-io-saturation",
+      "title": "Disk I/O Saturation (> 90%)",
+      "ruleGroup": "Storage",
+      "expr": "rate(node_disk_io_time_seconds_total{device=~\"sda|sdd\"}[1m]) * 100",
+      "threshold": 90,
+      "for": "10m",
+      "severity": "warning",
+      "summary": "Disk device {{ $labels.device }} I/O utilization is saturated at {{ $values.B.Value | printf \"%.1f\" }}% for 10m"
+    },
+    {
+      "uid": "host-ram-warning",
+      "title": "Host RAM High Usage (> 90%)",
+      "ruleGroup": "Host",
+      "expr": "100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))",
+      "threshold": 90,
+      "for": "5m",
+      "severity": "warning",
+      "summary": "Host RAM utilization is at {{ $values.B.Value | printf \"%.1f\" }}% (risk of OOM killer)"
+    },
+    {
+      "uid": "host-swap-critical",
+      "title": "Host Swap Exhaustion (> 80%)",
+      "ruleGroup": "Host",
+      "expr": "100 * (1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes))",
+      "threshold": 80,
+      "for": "5m",
+      "severity": "critical",
+      "summary": "🚨 CRITICAL: Host swap memory is at {{ $values.B.Value | printf \"%.1f\" }}% (risk of system thrashing and freeze)"
+    },
+    {
+      "uid": "host-cpu-temp-warning",
+      "title": "Host CPU Temperature High (> 80°C)",
+      "ruleGroup": "Host",
+      "expr": "max(node_hwmon_temp_celsius)",
+      "threshold": 80,
+      "for": "3m",
+      "severity": "warning",
+      "summary": "Host CPU temperature reached {{ $values.B.Value | printf \"%.1f\" }}°C on Lenovo ThinkPad E580"
+    },
+    {
+      "uid": "host-cpu-load-warning",
+      "title": "Host CPU Load Overload (> 6.0)",
+      "ruleGroup": "Host",
+      "expr": "node_load1",
+      "threshold": 6,
+      "for": "10m",
+      "severity": "warning",
+      "summary": "Host 1-minute CPU load average is {{ $values.B.Value | printf \"%.2f\" }} (above 6.0 capacity threshold for 10m)"
+    },
+    {
+      "uid": "container-crashlooping",
+      "title": "Container CrashLooping (> 3 restarts)",
+      "ruleGroup": "Containers",
+      "expr": "changes(container_start_time_seconds{name=~\"[a-zA-Z0-9_-]+\"}[15m])",
+      "threshold": 3,
+      "for": "2m",
+      "severity": "critical",
+      "summary": "🚨 CRITICAL: Container {{ $labels.name }} restarted {{ $values.B.Value | printf \"%.0f\" }} times in the last 15 minutes"
+    },
+    {
+      "uid": "core-service-down",
+      "title": "Core Service Down",
+      "ruleGroup": "Containers",
+      "expr": "time() - container_last_seen{name=~\"nginx-proxy-manager|pihole|grafana|radarr|sonarr|jellyfin\"}",
+      "threshold": 60,
+      "for": "2m",
+      "severity": "critical",
+      "summary": "🚨 CRITICAL: Core container {{ $labels.name }} is DOWN or not responding (inactive for > 60s)"
+    }
+  ]
+}

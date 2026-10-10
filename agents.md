@@ -324,7 +324,7 @@ Comprehensive system and container monitoring stack.
   ```bash
   python3 monitoring/upload_dashboards.py
   ```
-* **Alerting**: Native Grafana alert rules (`disk-space-warning` > 85%, `disk-space-critical` > 95%) routed to `Telegram-Alerts` contact point.
+* **Alerting**: 10 production SRE rules declaratively defined in [`monitoring/alerting/homelab_alerts.json`](monitoring/alerting/homelab_alerts.json) covering Storage, Host RAM/Swap/Temp, and Container crashes, routed to `Telegram-Alerts`.
 
 ### 5.8 n8n Workflow Automation 🤖
 
