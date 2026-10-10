@@ -172,21 +172,28 @@ homelab-e580/
 
 ---
 
-## Monitoring & SRE Dashboard
+## Monitoring & SRE Dashboards
 
-The homelab includes a production-grade, pre-configured Grafana SRE Dashboard located at [`monitoring/dashboards/docker_system_monitoring.json`](monitoring/dashboards/docker_system_monitoring.json).
+The homelab includes two production-grade, pre-configured Grafana SRE Dashboards located in [`monitoring/dashboards/`](monitoring/dashboards/):
 
-![Grafana SRE Dashboard Preview](https://salvadorcampanella-assets.s3.eu-west-1.amazonaws.com/grafana-dashboard.webp)
+1. **[🖥️ Host & Hardware Monitoring](monitoring/dashboards/host_hardware_monitoring.json)** (`UID: homelab-host`):
+   - **Host System Overview**: System Uptime, CPU Load (1m), RAM Usage, Swap Usage, Disk Used (LCD), Inode Usage (LCD), CPU Mode Breakdown, per-vCPU usage, CPU Core Temperatures (°C), and Host Network Traffic (+Rx / -Tx mirrored).
+   - **Storage & Disk Performance**: Triple-partition breakdown (`/dev/sda1` root `/`, `/dev/sda3` `/home`, and `/dev/sdd1` `/mnt/ev_deluxe`) covering 100% Stacked Disk Space, Throughput (Read/Write Bps), IOPS, and I/O Utilization % (Disk Busy).
+2. **[🐳 Docker & Containers Monitoring](monitoring/dashboards/docker_containers_monitoring.json)** (`UID: homelab-docker`):
+   - **Container Metrics & Rankings**: Running containers, Container Restart tracking, Top 5 Rankings (CPU %, RAM Working Set, Network Traffic), and per-container real-time metrics with dynamic `$container` dropdown filter.
+   - **Cross-dashboard navigation**: Built-in header links to switch between Host and Docker views instantly.
 
-### Key Features:
-- **🖥️ Host System Overview**: System Uptime, CPU Load (1m), RAM Usage (Used vs Total capacity), Swap Usage, Disk Used (LCD), Inode Usage (LCD), CPU Mode Breakdown, per-vCPU usage, CPU Core Temperatures (°C), and Host Network Traffic (+Rx / -Tx mirrored).
-- **💾 Storage & Disk Performance**: Dual-drive breakdown (`/dev/sda1` root and `/dev/sdd1` `/mnt/ev_deluxe`) covering 100% Stacked Disk Space, Throughput (Read/Write Bps), IOPS, and I/O Utilization % (Disk Busy).
-- **🐳 Docker Container Metrics & Rankings**: Top 5 Rankings (CPU %, RAM Working Set, Network Traffic), per-container real-time metrics, dynamic Container Filter dropdown (`$container`), and Container Restart tracking (`$__range` dynamic interval).
+### Automated Telegram Alerting:
+- **Disk Space Warning (> 85%)**: Alerts via Telegram bot if any partition (`/`, `/home`, `/mnt/ev_deluxe`) exceeds 85% for 5 minutes.
+- **Disk Space Critical (> 95%)**: High-priority alert if any partition exceeds 95% for 2 minutes.
+- **Notification Policy**: Default receiver configured to `Telegram-Alerts`.
 
-### How to Import:
-1. Open Grafana (`http://grafana.casita.local` or `http://<HOST_IP>:3000`).
-2. Navigate to **Dashboards** > **New** > **Import**.
-3. Upload [`monitoring/dashboards/docker_system_monitoring.json`](monitoring/dashboards/docker_system_monitoring.json) or paste its JSON content.
+### How to Provision / Sync Dashboards:
+Run the automated upload script (reads credentials directly from `.env`):
+```bash
+python3 monitoring/upload_dashboards.py
+```
+Or import either JSON file manually in Grafana under **Dashboards** > **New** > **Import**.
 
 ---
 

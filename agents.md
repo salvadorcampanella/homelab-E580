@@ -318,12 +318,13 @@ Comprehensive system and container monitoring stack.
 | cAdvisor      | `cadvisor`      | (Internal)             | 8080  | Container metrics (cgroup, memory working set, container restarts).|
 
 #### Dashboard Location & Management
-* **JSON Location**: [`monitoring/dashboards/docker_system_monitoring.json`](monitoring/dashboards/docker_system_monitoring.json)
-* **Grafana Dashboard UID**: `BiigkBu7k`
-* **Automated Sync**: Python API upload script:
+* **Host Dashboard JSON**: [`monitoring/dashboards/host_hardware_monitoring.json`](monitoring/dashboards/host_hardware_monitoring.json) (UID: `homelab-host`)
+* **Docker Dashboard JSON**: [`monitoring/dashboards/docker_containers_monitoring.json`](monitoring/dashboards/docker_containers_monitoring.json) (UID: `homelab-docker`)
+* **Automated Sync**: Python script using Grafana v2 Scenes API (reads credentials from `.env`):
   ```bash
-  cat monitoring/dashboards/docker_system_monitoring.json | docker exec -i grafana curl -s -X POST -H "Content-Type: application/json" -u admin:<PASSWORD> http://localhost:3000/api/dashboards/db -d @-
+  python3 monitoring/upload_dashboards.py
   ```
+* **Alerting**: Native Grafana alert rules (`disk-space-warning` > 85%, `disk-space-critical` > 95%) routed to `Telegram-Alerts` contact point.
 
 ### 5.8 n8n Workflow Automation 🤖
 
