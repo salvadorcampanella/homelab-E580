@@ -64,6 +64,7 @@ def main():
       ("npm", "nginx-proxy-manager", 81, "http", ""),
       ("radarr", "radarr", 7878, "http", ""),
       ("sonarr", "sonarr", 8989, "http", ""),
+      ("lidarr", "lidarr", 8686, "http", ""),
       ("prowlarr", "prowlarr", 9696, "http", ""),
       ("bazarr", "bazarr", 6767, "http", ""),
       ("qbit", "qbittorrent", 8080, "http", ""),

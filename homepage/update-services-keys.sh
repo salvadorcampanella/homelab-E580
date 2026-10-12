@@ -39,6 +39,9 @@ RADARR_KEY=$(get_xml_key radarr)
 SONARR_KEY=$(get_xml_key sonarr)
 [[ -n "$SONARR_KEY" ]] && log_ok "Sonarr key: ${SONARR_KEY:0:8}..." || log_warn "Sonarr key not found"
 
+LIDARR_KEY=$(get_xml_key lidarr)
+[[ -n "$LIDARR_KEY" ]] && log_ok "Lidarr key: ${LIDARR_KEY:0:8}..." || log_warn "Lidarr key not found"
+
 PROWLARR_ID=$(docker ps --format "{{.Names}}" | grep prowlarr | head -1)
 PROWLARR_KEY=""
 [[ -n "$PROWLARR_ID" ]] && PROWLARR_KEY=$(get_xml_key "$PROWLARR_ID")
@@ -103,6 +106,7 @@ PIHOLE_PASS="${PIHOLE_PASSWORD:-""}"
 
 replace_key "<RADARR_API_KEY>" "$RADARR_KEY"
 replace_key "<SONARR_API_KEY>" "$SONARR_KEY"
+replace_key "<LIDARR_API_KEY>" "$LIDARR_KEY"
 replace_key "<PROWLARR_API_KEY>" "$PROWLARR_KEY"
 replace_key "<BAZARR_API_KEY>" "$BAZARR_KEY"
 replace_key "<JELLYFIN_API_KEY>" "$JELLYFIN_KEY"

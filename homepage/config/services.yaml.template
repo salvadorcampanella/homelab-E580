@@ -121,6 +121,17 @@
           url: http://sonarr:8989
           key: <SONARR_API_KEY>    # Sonarr > Settings > General > API Key
 
+    - Lidarr:
+        icon: lidarr.png
+        href: https://lidarr.salvador512.com
+        description: Music management
+        container: lidarr
+        server: docker-local
+        widget:
+          type: lidarr
+          url: http://lidarr:8686
+          key: <LIDARR_API_KEY>    # Lidarr > Settings > General > API Key
+
     - Tdarr:
         icon: tdarr.png
         href: https://tdarr.salvador512.com

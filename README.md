@@ -35,6 +35,7 @@ graph TB
             subgraph media["🎬 Media Stack"]
                 Radarr["radarr · :7878"]
                 Sonarr["sonarr · :8989"]
+                Lidarr["lidarr · :8686"]
                 Prowlarr["prowlarr · :9696"]
                 Bazarr["bazarr · :6767"]
                 qBit["qbittorrent · :8080"]
@@ -153,6 +154,7 @@ homelab-e580/
 | DuckDNS | `duckdns` | — | Background service (DDNS) | Background service (DDNS) |
 | Radarr | `radarr` | — | `https://radarr.salvador512.com` | `http://radarr.casita.local` |
 | Sonarr | `sonarr` | — | `https://sonarr.salvador512.com` | `http://sonarr.casita.local` |
+| Lidarr | `lidarr` | — | `https://lidarr.salvador512.com` | `http://lidarr.casita.local` |
 | Prowlarr | `prowlarr` | — | `https://prowlarr.salvador512.com` | `http://prowlarr.casita.local` |
 | Bazarr | `bazarr` | — | `https://bazarr.salvador512.com` | `http://bazarr.casita.local` |
 | qBittorrent | `qbittorrent` | 6881 (torrents) | `https://qbit.salvador512.com` | `http://qbit.casita.local` |
@@ -240,9 +242,9 @@ nano /home/casita/docker-data/homepage/config/services.yaml  # Fill in API keys
 
 ```bash
 sudo mkdir -p /home/casita/docker-data/{npm/{config,letsencrypt,mysql},pihole/{config,dnsmasq},portainer,duckdns/config}
-sudo mkdir -p /home/casita/docker-data/arr/{radarr,sonarr,prowlarr,bazarr,qbittorrent,jellyfin,downloads}
+sudo mkdir -p /home/casita/docker-data/arr/{radarr,sonarr,lidarr,prowlarr,bazarr,qbittorrent,jellyfin,downloads}
 sudo mkdir -p /home/casita/docker-data/arr/tdarr/{server,configs,logs,transcode-cache}
-sudo mkdir -p /home/casita/docker-data/media/{movies,tv}
+sudo mkdir -p /home/casita/docker-data/media/{movies,tv,music}
 sudo mkdir -p /home/casita/docker-data/homepage/config
 sudo mkdir -p /home/casita/docker-data/photoprism/{mysql,personal-storage,compartido-storage}
 sudo mkdir -p /home/casita/docker-data/monitoring/{grafana,prometheus}
