@@ -41,7 +41,6 @@ graph TB
                 qBit["qbittorrent · :8080"]
                 Jellyfin["jellyfin · :8096 ⚡"]
                 Flare["flaresolverr · :8191"]
-                Tdarr["tdarr · :8265 ⚡"]
             end
 
             subgraph photos["📸 PhotoPrism"]
@@ -76,7 +75,6 @@ graph TB
     Jellyfin -.- GPU
     PPP -.- GPU
     PPC -.- GPU
-    Tdarr -.- GPU
     DDNS -.- host
 ```
 
@@ -124,9 +122,8 @@ homelab-e580/
 │   └── docker-compose.yml
 ├── duckdns/                     # 🌐 Dynamic DNS (DDNS)
 │   └── docker-compose.yml
-├── arr/                         # 🎬 Radarr, Sonarr, Prowlarr, Bazarr, qBit, Jellyfin, FlareSolverr, Tdarr
-│   ├── docker-compose.yml
-│   └── TDARR_SETUP.md           # Post-deploy configuration guide for Tdarr
+├── arr/                         # 🎬 Radarr, Sonarr, Lidarr, Prowlarr, Bazarr, qBit, Jellyfin, FlareSolverr
+│   └── docker-compose.yml
 ├── photoprism/                  # 📸 Photo gallery (personal + shared instances)
 │   └── docker-compose.yml
 ├── monitoring/                  # 📊 Grafana, Prometheus, Node Exporter, cAdvisor
@@ -160,7 +157,6 @@ homelab-e580/
 | qBittorrent | `qbittorrent` | 6881 (torrents) | `https://qbit.salvador512.com` | `http://qbit.casita.local` |
 | Jellyfin | `jellyfin` | — | `https://jellyfin.salvador512.com` | `http://jellyfin.casita.local` |
 | FlareSolverr | `flaresolverr` | — | Internal (Prowlarr only) | Internal (Prowlarr only) |
-| Tdarr | `tdarr` | — | `https://tdarr.salvador512.com` | `http://tdarr.casita.local` |
 | Homepage | `homepage` | — | `https://homepage.salvador512.com` | `http://homepage.casita.local` |
 | Glances | `glances` | — | `https://glances.salvador512.com` | `http://glances.casita.local` |
 | PhotoPrism DB | `photoprism-db` | — | Internal | Internal |
@@ -216,7 +212,6 @@ The server has an integrated Intel UHD 620 GPU. Hardware acceleration (Intel Qui
 
 - **Jellyfin**: Real-time video transcoding.
 - **PhotoPrism (both instances)**: Thumbnail generation and video indexing.
-- **Tdarr**: Automated batch transcoding (re-encodes files >8 GB to H.264, HDR→SDR tone mapping).
 
 ---
 
@@ -243,7 +238,6 @@ nano /home/casita/docker-data/homepage/config/services.yaml  # Fill in API keys
 ```bash
 sudo mkdir -p /home/casita/docker-data/{npm/{config,letsencrypt,mysql},pihole/{config,dnsmasq},portainer,duckdns/config}
 sudo mkdir -p /home/casita/docker-data/arr/{radarr,sonarr,lidarr,prowlarr,bazarr,qbittorrent,jellyfin,downloads}
-sudo mkdir -p /home/casita/docker-data/arr/tdarr/{server,configs,logs,transcode-cache}
 sudo mkdir -p /home/casita/docker-data/media/{movies,tv,music}
 sudo mkdir -p /home/casita/docker-data/homepage/config
 sudo mkdir -p /home/casita/docker-data/photoprism/{mysql,personal-storage,compartido-storage}

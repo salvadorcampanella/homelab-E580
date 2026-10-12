@@ -132,16 +132,6 @@
           url: http://lidarr:8686
           key: <LIDARR_API_KEY>    # Lidarr > Settings > General > API Key
 
-    - Tdarr:
-        icon: tdarr.png
-        href: https://tdarr.salvador512.com
-        description: Transcoding (QuickSync GPU)
-        container: tdarr
-        server: docker-local
-        widget:
-          type: tdarr
-          url: http://tdarr:8265
-
     - Prowlarr:
         icon: prowlarr.png
         href: https://prowlarr.salvador512.com

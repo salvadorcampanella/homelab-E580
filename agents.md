@@ -52,7 +52,7 @@ Internet
        ├── glances             (internal api+web :61208)  │
        ├── photoprism-personal (internal web :2342)       │
        ├── photoprism-compartido (internal web :2342)     │
-       ├── tdarr               (internal web :8265)       │
+       ├── lidarr              (internal web :8686)       │
        └── ...other services                              │
                                                           │
        NPM reverse proxies to all ◄───────────────────────┘
@@ -268,14 +268,13 @@ Services requiring GPU access for transcoding or processing (like Jellyfin or Ph
 |-------------|---------------|---------------|
 | Radarr      | `radarr`      | 7878          |
 | Sonarr      | `sonarr`      | 8989          |
+| Lidarr      | `lidarr`      | 8686          |
 | Prowlarr    | `prowlarr`    | 9696          |
 | Bazarr      | `bazarr`      | 6767          |
 | qBittorrent | `qbittorrent` | 8080 (web)    |
 | Jellyfin    | `jellyfin`    | 8096          |
-| Tdarr       | `tdarr`       | 8265          |
 
 - **Jellyfin**: Uses Intel QuickSync (VAAPI) for hardware transcoding via the `x-gpu-access` anchor.
-- **Tdarr**: Automated batch transcoding. Re-encodes files >8 GB to H.264 (AVC) using Intel QuickSync (VAAPI) and applies HDR→SDR tone mapping. Uses the `x-gpu-access` anchor. See `arr/TDARR_SETUP.md` for post-deploy configuration.
 
 
 ### 5.4 FlareSolverr 🔥

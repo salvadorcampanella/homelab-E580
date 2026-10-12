@@ -41,23 +41,6 @@ def main():
     
     print(f"[INFO] Found SSL Certificate ID: {cert_id} for {base_domain}")
 
-    # 1. Fetch and clean any old DuckDNS or .casita.local Proxy Hosts that do not match base_domain
-    req_ph = urllib.request.Request(f"{npm_url}/api/nginx/proxy-hosts", headers=headers)
-    proxy_hosts = json.loads(urllib.request.urlopen(req_ph, timeout=5).read().decode())
-
-    print("\n--- STEP 1: Cleaning Old Proxy Hosts ---")
-    for p in proxy_hosts:
-        domains = p.get("domain_names", [])
-        ph_id = p["id"]
-        if any(d.endswith(".casita.local") or "duckdns.org" in d for d in domains):
-            print(f"Deleting Old Proxy Host ID {ph_id}: {domains}")
-            req_del = urllib.request.Request(f"{npm_url}/api/nginx/proxy-hosts/{ph_id}", method="DELETE", headers=headers)
-            try:
-                urllib.request.urlopen(req_del, timeout=5)
-                print(f"  🟢 Deleted Proxy Host ID {ph_id}")
-            except Exception as e:
-                print(f"  🔴 Error deleting Proxy Host ID {ph_id}: {e}")
-
     services = [
       ("pihole", "pihole", 80, "http", "location = / {\n    return 302 /admin/;\n}"),
       ("portainer", "portainer", 9443, "https", ""),
@@ -69,7 +52,6 @@ def main():
       ("bazarr", "bazarr", 6767, "http", ""),
       ("qbit", "qbittorrent", 8080, "http", ""),
       ("jellyfin", "jellyfin", 8096, "http", ""),
-      ("tdarr", "tdarr", 8265, "http", ""),
       ("homepage", "homepage", 3000, "http", ""),
       ("glances", "glances", 61208, "http", ""),
       ("grafana", "grafana", 3000, "http", ""),
@@ -77,6 +59,29 @@ def main():
       ("familia", "photoprism-compartido", 2342, "http", ""),
       ("n8n", "n8n", 5678, "http", "")
     ]
+
+    valid_https_doms = {f"{prefix}.{base_domain}" for prefix, *_ in services}
+
+    # 1. Fetch and clean any old DuckDNS, .casita.local, or decommissioned Proxy Hosts
+    req_ph = urllib.request.Request(f"{npm_url}/api/nginx/proxy-hosts", headers=headers)
+    proxy_hosts = json.loads(urllib.request.urlopen(req_ph, timeout=5).read().decode())
+
+    print("\n--- STEP 1: Cleaning Old/Decommissioned Proxy Hosts ---")
+    for p in proxy_hosts:
+        domains = p.get("domain_names", [])
+        ph_id = p["id"]
+        is_obsolete = any(
+            d.endswith(".casita.local") or "duckdns.org" in d or (d.endswith(f".{base_domain}") and d not in valid_https_doms)
+            for d in domains
+        )
+        if is_obsolete:
+            print(f"Deleting Obsolete Proxy Host ID {ph_id}: {domains}")
+            req_del = urllib.request.Request(f"{npm_url}/api/nginx/proxy-hosts/{ph_id}", method="DELETE", headers=headers)
+            try:
+                urllib.request.urlopen(req_del, timeout=5)
+                print(f"  🟢 Deleted Proxy Host ID {ph_id}")
+            except Exception as e:
+                print(f"  🔴 Error deleting Proxy Host ID {ph_id}: {e}")
 
     # Refresh Proxy Hosts list
     req_ph = urllib.request.Request(f"{npm_url}/api/nginx/proxy-hosts", headers=headers)
@@ -122,7 +127,23 @@ def main():
             except Exception as e:
                 print(f"  🔴 Error creating HTTPS Host {https_dom}: {e}")
 
-    # Refresh Redirection Hosts list
+    # Refresh Redirection Hosts list and clean obsolete ones
+    req_rh = urllib.request.Request(f"{npm_url}/api/nginx/redirection-hosts", headers=headers)
+    redirect_hosts = json.loads(urllib.request.urlopen(req_rh, timeout=5).read().decode())
+    valid_local_doms = {f"{prefix}.casita.local" for prefix, *_ in services}
+
+    for r in redirect_hosts:
+        doms = r.get("domain_names", [])
+        rh_id = r["id"]
+        if doms and any(d.endswith(".casita.local") and d not in valid_local_doms for d in doms):
+            print(f"Deleting Obsolete Redirection Host ID {rh_id}: {doms}")
+            req_del = urllib.request.Request(f"{npm_url}/api/nginx/redirection-hosts/{rh_id}", method="DELETE", headers=headers)
+            try:
+                urllib.request.urlopen(req_del, timeout=5)
+                print(f"  🟢 Deleted Redirection Host ID {rh_id}")
+            except Exception as e:
+                print(f"  🔴 Error deleting Redirection Host ID {rh_id}: {e}")
+
     req_rh = urllib.request.Request(f"{npm_url}/api/nginx/redirection-hosts", headers=headers)
     redirect_hosts = json.loads(urllib.request.urlopen(req_rh, timeout=5).read().decode())
     existing_redirs = {r["domain_names"][0]: r["id"] for r in redirect_hosts if r.get("domain_names")}
