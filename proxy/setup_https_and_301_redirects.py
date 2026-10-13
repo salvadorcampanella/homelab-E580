@@ -3,6 +3,7 @@ import urllib.request
 import json
 import os
 import time
+import subprocess
 
 def main():
     env = {}
@@ -52,6 +53,8 @@ def main():
       ("bazarr", "bazarr", 6767, "http", ""),
       ("qbit", "qbittorrent", 8080, "http", ""),
       ("jellyfin", "jellyfin", 8096, "http", ""),
+      ("metube", "metube", 8081, "http", ""),
+      ("metube-music", "metube-music", 8081, "http", ""),
       ("homepage", "homepage", 3000, "http", ""),
       ("glances", "glances", 61208, "http", ""),
       ("grafana", "grafana", 3000, "http", ""),
@@ -179,6 +182,28 @@ def main():
                 print(f"  🟢 Updated 301 Redirect ID {rh_id}: http://{local_dom} -> https://{target_dom}")
             except Exception as e:
                 print(f"  🔴 Error updating redirect for {local_dom}: {e}")
+
+    # STEP 4: Sync Pi-hole local DNS so every managed service resolves to this host.
+    # Records for other domains are preserved; stale managed ones (e.g. removed services) are dropped.
+    print("\n--- STEP 4: Syncing Pi-hole local DNS records ---")
+    host_ip = env.get("PIHOLE_HOST_IP")
+    pihole = env.get("PIHOLE_CONTAINER", "pihole")
+    if not host_ip:
+        print("  🟡 PIHOLE_HOST_IP not set in .env, skipping")
+        return
+    try:
+        current = subprocess.run(["docker", "exec", pihole, "pihole-FTL", "--config", "dns.hosts"],
+                                 capture_output=True, text=True, check=True).stdout.strip()
+        entries = [e.strip() for e in current.strip("[] ").split(",") if e.strip()]
+        managed = (".casita.local", f".{base_domain}")
+        kept = [e for e in entries if not e.split()[-1].endswith(managed)]
+        wanted = [f"{host_ip} {prefix}.{suffix}" for prefix, *_ in services
+                  for suffix in ("casita.local", base_domain)]
+        subprocess.run(["docker", "exec", pihole, "pihole-FTL", "--config", "dns.hosts",
+                        json.dumps(kept + wanted)], capture_output=True, text=True, check=True)
+        print(f"  🟢 Pi-hole DNS synced: {len(wanted)} managed records ({len(kept)} others preserved)")
+    except Exception as e:
+        print(f"  🔴 Error syncing Pi-hole DNS: {e}")
 
 if __name__ == "__main__":
     main()

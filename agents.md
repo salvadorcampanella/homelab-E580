@@ -273,8 +273,12 @@ Services requiring GPU access for transcoding or processing (like Jellyfin or Ph
 | Bazarr      | `bazarr`      | 6767          |
 | qBittorrent | `qbittorrent` | 8080 (web)    |
 | Jellyfin    | `jellyfin`    | 8096          |
+| MeTube      | `metube`      | 8081          |
+| MeTube Music | `metube-music` | 8081        |
 
 - **Jellyfin**: Uses Intel QuickSync (VAAPI) for hardware transcoding via the `x-gpu-access` anchor.
+- **MeTube**: yt-dlp web UI for video. Downloads go to `media/<courses|entertainment>` (custom folder chosen per download in the UI). Mounted in Jellyfin as `/data/courses` and `/data/entertainment`.
+- **MeTube Music**: second MeTube instance that writes audio straight into `media/music` using a yt-dlp `OUTPUT_TEMPLATE` (`Artist/Album/NN - Artist - Title`; no album → `Artist/Singles`), mirroring the Lidarr layout. Pick Audio > MP3 320 in the UI. State in `arr/metube-music`.
 
 
 ### 5.4 FlareSolverr 🔥

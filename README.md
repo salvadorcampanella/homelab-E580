@@ -41,6 +41,8 @@ graph TB
                 qBit["qbittorrent · :8080"]
                 Jellyfin["jellyfin · :8096 ⚡"]
                 Flare["flaresolverr · :8191"]
+                MeTube["metube · :8081"]
+                MeTubeMusic["metube-music · :8081"]
             end
 
             subgraph photos["📸 PhotoPrism"]
@@ -122,7 +124,7 @@ homelab-e580/
 │   └── docker-compose.yml
 ├── duckdns/                     # 🌐 Dynamic DNS (DDNS)
 │   └── docker-compose.yml
-├── arr/                         # 🎬 Radarr, Sonarr, Lidarr, Prowlarr, Bazarr, qBit, Jellyfin, FlareSolverr
+├── arr/                         # 🎬 Radarr, Sonarr, Lidarr, Prowlarr, Bazarr, qBit, Jellyfin, FlareSolverr, MeTube (+Music)
 │   └── docker-compose.yml
 ├── photoprism/                  # 📸 Photo gallery (personal + shared instances)
 │   └── docker-compose.yml
@@ -157,6 +159,8 @@ homelab-e580/
 | qBittorrent | `qbittorrent` | 6881 (torrents) | `https://qbit.salvador512.com` | `http://qbit.casita.local` |
 | Jellyfin | `jellyfin` | — | `https://jellyfin.salvador512.com` | `http://jellyfin.casita.local` |
 | FlareSolverr | `flaresolverr` | — | Internal (Prowlarr only) | Internal (Prowlarr only) |
+| MeTube | `metube` | — | `https://metube.salvador512.com` | `http://metube.casita.local` |
+| MeTube Music | `metube-music` | — | `https://metube-music.salvador512.com` | `http://metube-music.casita.local` |
 | Homepage | `homepage` | — | `https://homepage.salvador512.com` | `http://homepage.casita.local` |
 | Glances | `glances` | — | `https://glances.salvador512.com` | `http://glances.casita.local` |
 | PhotoPrism DB | `photoprism-db` | — | Internal | Internal |
@@ -237,8 +241,8 @@ nano /home/casita/docker-data/homepage/config/services.yaml  # Fill in API keys
 
 ```bash
 sudo mkdir -p /home/casita/docker-data/{npm/{config,letsencrypt,mysql},pihole/{config,dnsmasq},portainer,duckdns/config}
-sudo mkdir -p /home/casita/docker-data/arr/{radarr,sonarr,lidarr,prowlarr,bazarr,qbittorrent,jellyfin,downloads}
-sudo mkdir -p /home/casita/docker-data/media/{movies,tv,music}
+sudo mkdir -p /home/casita/docker-data/arr/{radarr,sonarr,lidarr,prowlarr,bazarr,qbittorrent,jellyfin,downloads,metube,metube-music}
+sudo mkdir -p /home/casita/docker-data/media/{movies,tv,music,courses,entertainment}
 sudo mkdir -p /home/casita/docker-data/homepage/config
 sudo mkdir -p /home/casita/docker-data/photoprism/{mysql,personal-storage,compartido-storage}
 sudo mkdir -p /home/casita/docker-data/monitoring/{grafana,prometheus}

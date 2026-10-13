@@ -99,6 +99,20 @@
           key: <JELLYFIN_API_KEY>   # Jellyfin > Dashboard > API Keys
           enableBlocks: true
 
+    - MeTube:
+        icon: metube.png
+        href: https://metube.salvador512.com
+        description: YouTube downloader (Courses / Entertainment)
+        container: metube
+        server: docker-local
+
+    - MeTube Music:
+        icon: metube.png
+        href: https://metube-music.salvador512.com
+        description: YouTube to music library (Artist/Album)
+        container: metube-music
+        server: docker-local
+
     - Radarr:
         icon: radarr.png
         href: https://radarr.salvador512.com

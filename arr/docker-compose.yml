@@ -170,6 +170,8 @@ services:
       - ${DOCKER_DATA_PATH}/media/movies:/data/movies
       - ${DOCKER_DATA_PATH}/media/tv:/data/tv
       - ${DOCKER_DATA_PATH}/media/music:/data/music
+      - ${DOCKER_DATA_PATH}/media/courses:/data/courses
+      - ${DOCKER_DATA_PATH}/media/entertainment:/data/entertainment
     networks:
       - proxy-nw
 
@@ -199,6 +201,60 @@ services:
     networks:
       - proxy-nw
 
+  # -------------------------------------------------------------------
+  # MeTube — yt-dlp web UI to download YouTube videos (courses, entertainment)
+  # Docs: https://github.com/alexta69/metube
+  # In the UI pick MP4 and a custom folder: courses or entertainment.
+  # Files land in ${DOCKER_DATA_PATH}/media/<folder>
+  # For music use metube-music (below).
+  # -------------------------------------------------------------------
+  metube:
+    image: ghcr.io/alexta69/metube:latest
+    container_name: metube
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      - TZ=${TZ:-Europe/Madrid}
+      - DOWNLOAD_DIR=/downloads
+      - STATE_DIR=/state
+      - TEMP_DIR=/state/tmp
+      - CUSTOM_DIRS=true
+      - CREATE_CUSTOM_DIRS=false
+      - DEFAULT_FOLDER=entertainment
+    volumes:
+      - ${DOCKER_DATA_PATH}/media/courses:/downloads/courses
+      - ${DOCKER_DATA_PATH}/media/entertainment:/downloads/entertainment
+      - ${DOCKER_DATA_PATH}/arr/metube:/state
+    # NOT exposed to host — internal access via proxy-nw (container: metube:8081)
+    networks:
+      - proxy-nw
+
+  # -------------------------------------------------------------------
+  # MeTube Music — same app, writes straight into the Lidarr music library
+  # using the same layout as Lidarr: Artist/Album/NN - Artist - Title.mp3
+  # (tags come from YouTube; tracks without album go to Artist/Singles).
+  # In the UI pick Audio > MP3 320. State lives outside the library.
+  # -------------------------------------------------------------------
+  metube-music:
+    image: ghcr.io/alexta69/metube:latest
+    container_name: metube-music
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      - TZ=${TZ:-Europe/Madrid}
+      - DOWNLOAD_DIR=/music
+      - STATE_DIR=/state
+      - TEMP_DIR=/state/tmp
+      - CUSTOM_DIRS=false
+      - OUTPUT_TEMPLATE=%(album_artist,artist,uploader)s/%(album|Singles)s/%(track_number&{:02d} - |)s%(artist,uploader)s - %(title)s.%(ext)s
+      - OUTPUT_TEMPLATE_PLAYLIST=%(album_artist,artist,uploader)s/%(album|Singles)s/%(track_number&{:02d} - |)s%(artist,uploader)s - %(title)s.%(ext)s
+      - OUTPUT_TEMPLATE_CHANNEL=%(album_artist,artist,uploader)s/%(album|Singles)s/%(track_number&{:02d} - |)s%(artist,uploader)s - %(title)s.%(ext)s
+    volumes:
+      - ${DOCKER_DATA_PATH}/media/music:/music
+      - ${DOCKER_DATA_PATH}/arr/metube-music:/state
+    # NOT exposed to host — internal access via proxy-nw (container: metube-music:8081)
+    networks:
+      - proxy-nw
 
 
 networks:
