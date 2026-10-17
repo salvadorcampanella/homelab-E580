@@ -39,6 +39,7 @@ Internet
    │
    └── [Internal Network: proxy-nw] ──────────────────────┐
        │                                                  │
+       ├── oauth2-proxy        (internal web :4180)       │
        ├── pihole              (internal web :80)         │
        ├── portainer           (internal web :9443)       │
        ├── radarr              (internal web :7878)       │
@@ -73,9 +74,10 @@ casita-dockercompose/
 ├── README.md                    # Human-readable instructions
 ├── agents.md                    # This file — guide for AI agents
 │
-├── proxy/                       # 🔒 Nginx Proxy Manager + MariaDB
+├── proxy/                       # 🔒 Nginx Proxy Manager + MariaDB + OAuth2 Proxy
 │   ├── docker-compose.yml
-│   └── setup-npm-hosts.sh       # Automated host configuration script
+│   ├── setup-npm-hosts.sh       # Automated host configuration runner
+│   └── setup_https_and_301_redirects.py # NPM REST API automation script
 ├── pihole/                      # 🛡️ DNS + Ad-blocker
 │   └── docker-compose.yml
 ├── portainer/                   # 📦 Visual Docker management
@@ -250,12 +252,28 @@ Services requiring GPU access for transcoding or processing (like Jellyfin or Ph
 
 ## 5. Active Services — Implementation Notes
 
-### 5.1 Nginx Proxy Manager + Setup Script 🔒
+### 5.1 Nginx Proxy Manager, OAuth2 Proxy & Perimeter Auth 🔒
 
-- Main entry point via Wireguard.
-- `proxy-nw` network creator.
-- `proxy/setup-npm-hosts.sh` configures hosts via NPM REST API.
-- Idempotent: detects existing hosts.
+- **Nginx Proxy Manager**: Main entry point via Wireguard (`proxy-nw` creator).
+- **OAuth2 Proxy (`oauth2-proxy`)**:
+  - Image: `quay.io/oauth2-proxy/oauth2-proxy:v7.6.0` on internal port `4180`.
+  - Provider: Google OAuth (`OAUTH2_PROXY_PROVIDER=google`).
+  - Scoped Domain: `.salvador512.com` (allows single sign-on cookie across all subdomains).
+  - Callback: `https://auth.salvador512.com/oauth2/callback`.
+  - Allowed Emails: `${DOCKER_DATA_PATH}/oauth2-proxy/authenticated_emails.txt` (read-only mount).
+- **Perimeter Authentication Pattern (`auth_request`)**:
+  - NPM advanced config enforces `auth_request /oauth2/auth;` returning 401 redirecting to `https://auth.salvador512.com/oauth2/sign_in`.
+  - **Protected Admin Services**: `auth`, `pihole`, `portainer`, `npm`, `radarr`, `sonarr`, `lidarr`, `prowlarr`, `bazarr`, `qbit`, `metube`, `metube-music`, `glances`, `grafana`, `fotos`, `n8n`.
+  - **Internal / Public Exceptions**:
+    - `homepage`: Accessible directly without OAuth.
+    - `jellyfin`: Shared family media streaming (handles native Jellyfin auth).
+    - `familia`: Shared family photo album (handles native PhotoPrism auth).
+  - **API / Webhook Bypasses**:
+    - `n8n`: `location ^~ /webhook/` and `/webhook-test/` disable `auth_request` to allow incoming webhooks (e.g. Telegram) without redirect.
+    - `pihole`: Root `/` redirects to `/admin/` (configured passwordless behind OAuth).
+- **Automated Provisioning**:
+  - `proxy/setup_https_and_301_redirects.py`: Automated idempotent configuration via NPM REST API.
+  - Runner script: `proxy/setup-npm-hosts.sh`.
 
 ### 5.2 DuckDNS 🌐
 

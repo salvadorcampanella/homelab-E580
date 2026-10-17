@@ -42,25 +42,66 @@ def main():
     
     print(f"[INFO] Found SSL Certificate ID: {cert_id} for {base_domain}")
 
+    oauth_adv_config = (
+        "auth_request /oauth2/auth;\n"
+        f"error_page 401 = https://auth.{base_domain}/oauth2/sign_in?rd=$scheme://$host$request_uri;\n\n"
+        "location = /oauth2/auth {\n"
+        "    auth_request off;\n"
+        "    proxy_pass http://oauth2-proxy:4180/oauth2/auth;\n"
+        "    proxy_set_header Host $host;\n"
+        "    proxy_set_header X-Real-IP $remote_addr;\n"
+        "    proxy_set_header X-Scheme $scheme;\n"
+        "    proxy_set_header X-Auth-Request-Redirect $scheme://$host$request_uri;\n"
+        "    proxy_pass_request_body off;\n"
+        '    proxy_set_header Content-Length "";\n'
+        "}"
+    )
+
+    pihole_adv_config = (
+        "location = / {\n"
+        "    return 302 /admin/;\n"
+        "}\n\n"
+        + oauth_adv_config
+    )
+
+    n8n_adv_config = (
+        "location ^~ /webhook/ {\n"
+        "    auth_request off;\n"
+        "    proxy_pass http://n8n:5678;\n"
+        "    proxy_set_header Host $host;\n"
+        "    proxy_set_header X-Real-IP $remote_addr;\n"
+        "    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n"
+        "    proxy_set_header X-Forwarded-Proto $scheme;\n"
+        "}\n"
+        "location ^~ /webhook-test/ {\n"
+        "    auth_request off;\n"
+        "    proxy_pass http://n8n:5678;\n"
+        "    proxy_set_header Host $host;\n"
+        "    proxy_set_header X-Forwarded-Proto $scheme;\n"
+        "}\n\n"
+        + oauth_adv_config
+    )
+
     services = [
-      ("pihole", "pihole", 80, "http", "location = / {\n    return 302 /admin/;\n}"),
-      ("portainer", "portainer", 9443, "https", ""),
-      ("npm", "nginx-proxy-manager", 81, "http", ""),
-      ("radarr", "radarr", 7878, "http", ""),
-      ("sonarr", "sonarr", 8989, "http", ""),
-      ("lidarr", "lidarr", 8686, "http", ""),
-      ("prowlarr", "prowlarr", 9696, "http", ""),
-      ("bazarr", "bazarr", 6767, "http", ""),
-      ("qbit", "qbittorrent", 8080, "http", ""),
+      ("auth", "oauth2-proxy", 4180, "http", ""),
+      ("pihole", "pihole", 80, "http", pihole_adv_config),
+      ("portainer", "portainer", 9443, "https", oauth_adv_config),
+      ("npm", "nginx-proxy-manager", 81, "http", oauth_adv_config),
+      ("radarr", "radarr", 7878, "http", oauth_adv_config),
+      ("sonarr", "sonarr", 8989, "http", oauth_adv_config),
+      ("lidarr", "lidarr", 8686, "http", oauth_adv_config),
+      ("prowlarr", "prowlarr", 9696, "http", oauth_adv_config),
+      ("bazarr", "bazarr", 6767, "http", oauth_adv_config),
+      ("qbit", "qbittorrent", 8080, "http", oauth_adv_config),
       ("jellyfin", "jellyfin", 8096, "http", ""),
-      ("metube", "metube", 8081, "http", ""),
-      ("metube-music", "metube-music", 8081, "http", ""),
+      ("metube", "metube", 8081, "http", oauth_adv_config),
+      ("metube-music", "metube-music", 8081, "http", oauth_adv_config),
       ("homepage", "homepage", 3000, "http", ""),
-      ("glances", "glances", 61208, "http", ""),
-      ("grafana", "grafana", 3000, "http", ""),
-      ("fotos", "photoprism-personal", 2342, "http", ""),
+      ("glances", "glances", 61208, "http", oauth_adv_config),
+      ("grafana", "grafana", 3000, "http", oauth_adv_config),
+      ("fotos", "photoprism-personal", 2342, "http", oauth_adv_config),
       ("familia", "photoprism-compartido", 2342, "http", ""),
-      ("n8n", "n8n", 5678, "http", "")
+      ("n8n", "n8n", 5678, "http", n8n_adv_config)
     ]
 
     valid_https_doms = {f"{prefix}.{base_domain}" for prefix, *_ in services}

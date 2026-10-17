@@ -35,6 +35,29 @@ services:
     networks:
       - proxy-nw
 
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    container_name: oauth2-proxy
+    restart: unless-stopped
+    environment:
+      - OAUTH2_PROXY_PROVIDER=google
+      - OAUTH2_PROXY_CLIENT_ID=${OAUTH2_PROXY_CLIENT_ID}
+      - OAUTH2_PROXY_CLIENT_SECRET=${OAUTH2_PROXY_CLIENT_SECRET}
+      - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
+      - OAUTH2_PROXY_COOKIE_DOMAINS=.${BASE_DOMAIN}
+      - OAUTH2_PROXY_WHITELIST_DOMAINS=.${BASE_DOMAIN}
+      - OAUTH2_PROXY_COOKIE_SECURE=true
+      - OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:4180
+      - OAUTH2_PROXY_REVERSE_PROXY=true
+      - OAUTH2_PROXY_SET_XAUTHREQUEST=true
+      - OAUTH2_PROXY_REDIRECT_URL=https://auth.${BASE_DOMAIN}/oauth2/callback
+      - OAUTH2_PROXY_EMAIL_DOMAINS=*
+      - OAUTH2_PROXY_AUTHENTICATED_EMAILS_FILE=/config/authenticated_emails.txt
+    volumes:
+      - ${DOCKER_DATA_PATH}/oauth2-proxy:/config:ro
+    networks:
+      - proxy-nw
+
 networks:
   proxy-nw:
     name: proxy-nw

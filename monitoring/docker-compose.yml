@@ -15,6 +15,9 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       # Allows easier Grafana embedding in iframes if needed
       - GF_SERVER_ROOT_URL=http://grafana.casita.local
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
       - ${DOCKER_DATA_PATH}/monitoring/grafana:/var/lib/grafana
     networks:

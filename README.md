@@ -24,6 +24,7 @@ graph TB
     subgraph host["🖥️ Lenovo E580 · Ubuntu Server"]
         subgraph net["Docker Network: proxy-nw"]
             NPM["nginx-proxy-manager<br/>:80 · :81 · :443"]
+            OAuth["oauth2-proxy · :4180<br/>(Google SSO)"]
 
             subgraph infra["Infrastructure"]
                 Pihole["pihole · :53"]
@@ -64,6 +65,7 @@ graph TB
     Internet --> WG
     RC --> WG
     WG --> NPM
+    NPM -. "auth_request" .-> OAuth
     NPM --> infra
     NPM --> media
     NPM --> photos
@@ -97,6 +99,9 @@ cp .env.template .env
 | `BASE_DOMAIN` | Your primary domain | Purchase domain (e.g. Cloudflare DNS) |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare DNS edit token | Cloudflare > My Profile > API Tokens > Create Token (DNS Edit) |
 | `DUCKDNS_TOKEN` | Dynamic DNS token | DuckDNS.org Account panel |
+| `OAUTH2_PROXY_CLIENT_ID` | Google OAuth Client ID | Google Cloud Console > Credentials > OAuth 2.0 Client IDs |
+| `OAUTH2_PROXY_CLIENT_SECRET` | Google OAuth Client Secret | Google Cloud Console > Credentials > OAuth 2.0 Client IDs |
+| `OAUTH2_PROXY_COOKIE_SECRET` | 32-byte Base64 cookie secret | Generate via `openssl rand -base64 32 \| tr -- '+/' '-_'` |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot Token | Telegram `@BotFather` > `/newbot` |
 | `GEMINI_API_KEY` | Google Gemini API Key | Google AI Studio > Create API Key |
 | `PAYROLL_SPREADSHEET_ID` | Google Sheets ID | Extract from Sheets URL: `https://docs.google.com/spreadsheets/d/<ID>/edit` |
@@ -115,9 +120,10 @@ homelab-e580/
 ├── agents.md                    # Full technical guide for AI agents and admins
 ├── README.md                    # This file
 │
-├── proxy/                       # 🔒 Nginx Proxy Manager + MariaDB
+├── proxy/                       # 🔒 Nginx Proxy Manager + MariaDB + OAuth2 Proxy
 │   ├── docker-compose.yml
-│   └── setup-npm-hosts.sh       # Script to configure proxy hosts and Pi-hole DNS via API
+│   ├── setup-npm-hosts.sh       # Script to configure proxy hosts and Pi-hole DNS via API
+│   └── setup_https_and_301_redirects.py # NPM REST API automation script
 ├── pihole/                      # 🛡️ DNS + Ad-blocker
 │   └── docker-compose.yml
 ├── portainer/                   # 📦 Visual Docker management
@@ -144,33 +150,34 @@ homelab-e580/
 
 ## Active Services
 
-| Service | Container | Host Port | Primary HTTPS Domain | Local 301 Redirection Domain |
+| Service | Container | Host Port | Primary HTTPS Domain | Auth Protection |
 |---|---|---|---|---|
-| Nginx Proxy Manager | `nginx-proxy-manager` | 80, 81, 443 | `https://npm.salvador512.com` | `http://npm.casita.local` |
+| OAuth2 Proxy | `oauth2-proxy` | — | `https://auth.salvador512.com` | Google SSO Endpoint |
+| Nginx Proxy Manager | `nginx-proxy-manager` | 80, 81, 443 | `https://npm.salvador512.com` | Google SSO |
 | NPM Database | `npm-db` | — | Internal | Internal |
-| Pi-hole | `pihole` | 53 (DNS) | `https://pihole.salvador512.com` | `http://pihole.casita.local` |
-| Portainer | `portainer` | — | `https://portainer.salvador512.com` | `http://portainer.casita.local` |
-| DuckDNS | `duckdns` | — | Background service (DDNS) | Background service (DDNS) |
-| Radarr | `radarr` | — | `https://radarr.salvador512.com` | `http://radarr.casita.local` |
-| Sonarr | `sonarr` | — | `https://sonarr.salvador512.com` | `http://sonarr.casita.local` |
-| Lidarr | `lidarr` | — | `https://lidarr.salvador512.com` | `http://lidarr.casita.local` |
-| Prowlarr | `prowlarr` | — | `https://prowlarr.salvador512.com` | `http://prowlarr.casita.local` |
-| Bazarr | `bazarr` | — | `https://bazarr.salvador512.com` | `http://bazarr.casita.local` |
-| qBittorrent | `qbittorrent` | 6881 (torrents) | `https://qbit.salvador512.com` | `http://qbit.casita.local` |
-| Jellyfin | `jellyfin` | — | `https://jellyfin.salvador512.com` | `http://jellyfin.casita.local` |
-| FlareSolverr | `flaresolverr` | — | Internal (Prowlarr only) | Internal (Prowlarr only) |
-| MeTube | `metube` | — | `https://metube.salvador512.com` | `http://metube.casita.local` |
-| MeTube Music | `metube-music` | — | `https://metube-music.salvador512.com` | `http://metube-music.casita.local` |
-| Homepage | `homepage` | — | `https://homepage.salvador512.com` | `http://homepage.casita.local` |
-| Glances | `glances` | — | `https://glances.salvador512.com` | `http://glances.casita.local` |
+| Pi-hole | `pihole` | 53 (DNS) | `https://pihole.salvador512.com` | Google SSO |
+| Portainer | `portainer` | — | `https://portainer.salvador512.com` | Google SSO |
+| DuckDNS | `duckdns` | — | Background service (DDNS) | Internal |
+| Radarr | `radarr` | — | `https://radarr.salvador512.com` | Google SSO |
+| Sonarr | `sonarr` | — | `https://sonarr.salvador512.com` | Google SSO |
+| Lidarr | `lidarr` | — | `https://lidarr.salvador512.com` | Google SSO |
+| Prowlarr | `prowlarr` | — | `https://prowlarr.salvador512.com` | Google SSO |
+| Bazarr | `bazarr` | — | `https://bazarr.salvador512.com` | Google SSO |
+| qBittorrent | `qbittorrent` | 6881 (torrents) | `https://qbit.salvador512.com` | Google SSO |
+| Jellyfin | `jellyfin` | — | `https://jellyfin.salvador512.com` | App Native (Family) |
+| FlareSolverr | `flaresolverr` | — | Internal (Prowlarr only) | Internal |
+| MeTube | `metube` | — | `https://metube.salvador512.com` | Google SSO |
+| MeTube Music | `metube-music` | — | `https://metube-music.salvador512.com` | Google SSO |
+| Homepage | `homepage` | — | `https://homepage.salvador512.com` | Direct / Public |
+| Glances | `glances` | — | `https://glances.salvador512.com` | Google SSO |
 | PhotoPrism DB | `photoprism-db` | — | Internal | Internal |
-| PhotoPrism Personal | `photoprism-personal` | — | `https://fotos.salvador512.com` | `http://fotos.casita.local` |
-| PhotoPrism Shared | `photoprism-compartido` | — | `https://familia.salvador512.com` | `http://familia.casita.local` |
-| Grafana | `grafana` | — | `https://grafana.salvador512.com` | `http://grafana.casita.local` |
+| PhotoPrism Personal | `photoprism-personal` | — | `https://fotos.salvador512.com` | Google SSO |
+| PhotoPrism Shared | `photoprism-compartido` | — | `https://familia.salvador512.com` | App Native (Family) |
+| Grafana | `grafana` | — | `https://grafana.salvador512.com` | Google SSO |
 | Prometheus | `prometheus` | — | Internal | Internal |
 | Node Exporter | `node-exporter` | — | Internal | Internal |
 | cAdvisor | `cadvisor` | — | Internal | Internal |
-| n8n | `n8n` | — | `https://n8n.salvador512.com` | `http://n8n.casita.local` |
+| n8n | `n8n` | — | `https://n8n.salvador512.com` | Google SSO (Webhook bypass) |
 
 ---
 

@@ -14,7 +14,7 @@ services:
       # Web UI is also accessible via Nginx Proxy Manager
     environment:
       TZ: ${TZ:-Europe/Madrid}
-      FTLCONF_webserver_api_password: ${PIHOLE_PASSWORD}
+      FTLCONF_webserver_api_password: ""
       FTLCONF_dns_listeningMode: 'ALL'
     volumes:
       - ${DOCKER_DATA_PATH}/pihole/config:/etc/pihole
