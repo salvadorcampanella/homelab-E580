@@ -1,3 +1,5 @@
+name: homelab-e580
+
 # Root orchestrator to manage all services
 include:
   - path: ./proxy/docker-compose.yml

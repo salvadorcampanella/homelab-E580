@@ -2,6 +2,7 @@
 import urllib.request
 import json
 import os
+import sys
 import time
 import subprocess
 
@@ -54,7 +55,9 @@ def main():
             f"error_page 401 = https://auth.{base_domain}/oauth2/sign_in?rd=$scheme://$host$request_uri;\n\n"
             "location = /oauth2/auth {\n"
             "    auth_request off;\n"
-            "    proxy_pass http://oauth2-proxy:4180/oauth2/auth;\n"
+            "    resolver 127.0.0.11 valid=10s ipv6=off;\n"
+            "    set $oauth_upstream http://oauth2-proxy:4180;\n"
+            "    proxy_pass $oauth_upstream/oauth2/auth;\n"
             "    proxy_set_header Host $host;\n"
             "    proxy_set_header X-Real-IP $remote_addr;\n"
             "    proxy_set_header X-Scheme $scheme;\n"
