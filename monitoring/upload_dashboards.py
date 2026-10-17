@@ -247,6 +247,7 @@ def main():
     dashboards = [
         (REPO_ROOT / "monitoring/dashboards/host_hardware_monitoring.json", "homelab-host", "🖥️ Host & Hardware Monitoring"),
         (REPO_ROOT / "monitoring/dashboards/docker_containers_monitoring.json", "homelab-docker", "🐳 Docker & Containers Monitoring"),
+        (REPO_ROOT / "monitoring/dashboards/pihole_monitoring.json", "homelab-pihole", "🛡️ Pi-hole DNS & Adblocking Monitoring"),
     ]
     for path, uid, title in dashboards:
         upload_dashboard(path, uid, title, base_url, headers)

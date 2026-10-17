@@ -76,6 +76,19 @@ services:
     networks:
       - proxy-nw
 
+  pihole-exporter:
+    image: ghcr.io/mosher-labs/pihole6-exporter:latest
+    container_name: pihole-exporter
+    restart: unless-stopped
+    command:
+      - "-H"
+      - "pihole"
+      - "--pihole-port"
+      - "80"
+    networks:
+      - proxy-nw
+
 networks:
   proxy-nw:
     external: true
+
