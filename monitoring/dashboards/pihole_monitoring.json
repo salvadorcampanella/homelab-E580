@@ -30,7 +30,7 @@
       "kind": "Panel",
       "spec": {
         "id": 1,
-        "title": "Consultas Totales",
+        "title": "Total Queries",
         "description": "",
         "links": [],
         "data": {
@@ -97,7 +97,7 @@
       "kind": "Panel",
       "spec": {
         "id": 10,
-        "title": "Actividad de Consultas por Cliente en el Tiempo",
+        "title": "Client Query Activity Over Time",
         "description": "",
         "links": [],
         "data": {
@@ -166,7 +166,7 @@
       "kind": "Panel",
       "spec": {
         "id": 11,
-        "title": "Tipos de Registros DNS (A, AAAA, HTTPS...)",
+        "title": "Requested DNS Record Types (A, AAAA, HTTPS...)",
         "description": "",
         "links": [],
         "data": {
@@ -226,7 +226,7 @@
       "kind": "Panel",
       "spec": {
         "id": 12,
-        "title": "C\u00f3digos de Respuesta (IP, CNAME, NXDOMAIN...)",
+        "title": "DNS Reply Codes (IP, CNAME, NXDOMAIN...)",
         "description": "",
         "links": [],
         "data": {
@@ -286,7 +286,7 @@
       "kind": "Panel",
       "spec": {
         "id": 13,
-        "title": "Destinos Upstream DNS",
+        "title": "Upstream DNS Destinations",
         "description": "",
         "links": [],
         "data": {
@@ -350,7 +350,7 @@
       "kind": "Panel",
       "spec": {
         "id": 2,
-        "title": "Amenazas / Ads Bloqueados",
+        "title": "Blocked Threats & Ads",
         "description": "",
         "links": [],
         "data": {
@@ -417,7 +417,7 @@
       "kind": "Panel",
       "spec": {
         "id": 3,
-        "title": "Tasa de Bloqueo (%)",
+        "title": "Block Ratio (%)",
         "description": "",
         "links": [],
         "data": {
@@ -501,7 +501,7 @@
       "kind": "Panel",
       "spec": {
         "id": 4,
-        "title": "Eficiencia Cach\u00e9 DNS",
+        "title": "DNS Cache Efficiency",
         "description": "",
         "links": [],
         "data": {
@@ -569,7 +569,7 @@
       "kind": "Panel",
       "spec": {
         "id": 5,
-        "title": "Clientes Activos / Total",
+        "title": "Active / Total Clients",
         "description": "",
         "links": [],
         "data": {
@@ -636,7 +636,7 @@
       "kind": "Panel",
       "spec": {
         "id": 6,
-        "title": "Lista de Bloqueo (Gravity)",
+        "title": "Gravity Blocklist Size",
         "description": "",
         "links": [],
         "data": {
@@ -703,7 +703,7 @@
       "kind": "Panel",
       "spec": {
         "id": 7,
-        "title": "Flujo de Consultas por Estado (Bloqueadas vs Cach\u00e9 vs Reenviadas)",
+        "title": "Query Flow by Status (Blocked vs Cached vs Forwarded)",
         "description": "",
         "links": [],
         "data": {
@@ -776,7 +776,7 @@
       "kind": "Panel",
       "spec": {
         "id": 8,
-        "title": "Distribuci\u00f3n de Estados DNS",
+        "title": "DNS Status Distribution",
         "description": "",
         "links": [],
         "data": {
@@ -840,7 +840,7 @@
       "kind": "Panel",
       "spec": {
         "id": 9,
-        "title": "Top Clientes por Volumen de Consultas",
+        "title": "Top Clients by Query Volume",
         "description": "",
         "links": [],
         "data": {
@@ -908,7 +908,7 @@
         {
           "kind": "RowsLayoutRow",
           "spec": {
-            "title": "\ud83d\udcca Resumen Ejecutivo y M\u00e9tricas Clave",
+            "title": "\ud83d\udcca Executive Summary & Key Metrics",
             "collapse": false,
             "layout": {
               "kind": "GridLayout",
@@ -1000,7 +1000,7 @@
         {
           "kind": "RowsLayoutRow",
           "spec": {
-            "title": "\ud83d\udcc8 Actividad y Estado de Consultas en el Tiempo",
+            "title": "\ud83d\udcc8 Query Activity & Status Over Time",
             "collapse": false,
             "layout": {
               "kind": "GridLayout",
@@ -1040,7 +1040,7 @@
         {
           "kind": "RowsLayoutRow",
           "spec": {
-            "title": "\ud83d\udcbb An\u00e1lisis de Clientes y Equipos",
+            "title": "\ud83d\udcbb Client Analytics & Top Talkers",
             "collapse": false,
             "layout": {
               "kind": "GridLayout",
@@ -1080,7 +1080,7 @@
         {
           "kind": "RowsLayoutRow",
           "spec": {
-            "title": "\ud83d\udd2c Protocolos, Respuestas y Destinos Upstream",
+            "title": "\ud83d\udd2c Protocols, Replies & Upstream Diagnostics",
             "collapse": false,
             "layout": {
               "kind": "GridLayout",
