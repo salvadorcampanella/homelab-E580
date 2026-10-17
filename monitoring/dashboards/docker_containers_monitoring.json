@@ -806,6 +806,18 @@
       "tooltip": "Switch to Host & Hardware Dashboard",
       "type": "link",
       "url": "/d/homelab-host"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "\ud83d\udee1\ufe0f Pi-hole DNS",
+      "tooltip": "Switch to Pi-hole DNS Dashboard",
+      "type": "link",
+      "url": "/d/homelab-pihole"
     }
   ],
   "liveNow": false,

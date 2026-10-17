@@ -1133,7 +1133,32 @@
       ]
     }
   },
-  "links": [],
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "\ud83d\udda5\ufe0f Host & Hardware",
+      "tooltip": "Switch to Host & Hardware Dashboard",
+      "type": "link",
+      "url": "/d/homelab-host"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "\ud83d\udc33 Docker & Containers",
+      "tooltip": "Switch to Docker & Containers Dashboard",
+      "type": "link",
+      "url": "/d/homelab-docker"
+    }
+  ],
   "liveNow": false,
   "preload": false,
   "tags": [
