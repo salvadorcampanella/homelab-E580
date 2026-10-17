@@ -77,7 +77,8 @@ casita-dockercompose/
 ├── proxy/                       # 🔒 Nginx Proxy Manager + MariaDB + OAuth2 Proxy
 │   ├── docker-compose.yml
 │   ├── setup-npm-hosts.sh       # Automated host configuration runner
-│   └── setup_https_and_301_redirects.py # NPM REST API automation script
+│   ├── setup_https_and_301_redirects.py # NPM REST API automation script
+│   └── emergency-bypass-oauth.sh # SRE Break-glass script (disable/enable OAuth)
 ├── pihole/                      # 🛡️ DNS + Ad-blocker
 │   └── docker-compose.yml
 ├── portainer/                   # 📦 Visual Docker management
@@ -271,9 +272,12 @@ Services requiring GPU access for transcoding or processing (like Jellyfin or Ph
   - **API / Webhook Bypasses**:
     - `n8n`: `location ^~ /webhook/` and `/webhook-test/` disable `auth_request` to allow incoming webhooks (e.g. Telegram) without redirect.
     - `pihole`: Root `/` redirects to `/admin/` (configured passwordless behind OAuth).
-- **Automated Provisioning**:
+- **Automated Provisioning & SRE Break-Glass**:
   - `proxy/setup_https_and_301_redirects.py`: Automated idempotent configuration via NPM REST API.
   - Runner script: `proxy/setup-npm-hosts.sh`.
+  - **Break-Glass Emergency Script (`proxy/emergency-bypass-oauth.sh`)**:
+    - `./proxy/emergency-bypass-oauth.sh disable`: Instantly strips `auth_request` across all hosts if Google OAuth is down or credentials are being rotated.
+    - `./proxy/emergency-bypass-oauth.sh enable`: Restores complete perimeter SSO on all services.
 
 ### 5.2 DuckDNS 🌐
 

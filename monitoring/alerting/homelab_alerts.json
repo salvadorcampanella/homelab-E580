@@ -108,7 +108,7 @@
       "uid": "core-service-down",
       "title": "Core Service Down",
       "ruleGroup": "Containers",
-      "expr": "time() - container_last_seen{name=~\"nginx-proxy-manager|pihole|grafana|radarr|sonarr|lidarr|jellyfin\"}",
+      "expr": "time() - container_last_seen{name=~\"nginx-proxy-manager|oauth2-proxy|pihole|grafana|radarr|sonarr|lidarr|jellyfin\"}",
       "threshold": 60,
       "for": "2m",
       "severity": "critical",

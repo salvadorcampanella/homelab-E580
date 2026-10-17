@@ -42,45 +42,52 @@ def main():
     
     print(f"[INFO] Found SSL Certificate ID: {cert_id} for {base_domain}")
 
-    oauth_adv_config = (
-        "auth_request /oauth2/auth;\n"
-        f"error_page 401 = https://auth.{base_domain}/oauth2/sign_in?rd=$scheme://$host$request_uri;\n\n"
-        "location = /oauth2/auth {\n"
-        "    auth_request off;\n"
-        "    proxy_pass http://oauth2-proxy:4180/oauth2/auth;\n"
-        "    proxy_set_header Host $host;\n"
-        "    proxy_set_header X-Real-IP $remote_addr;\n"
-        "    proxy_set_header X-Scheme $scheme;\n"
-        "    proxy_set_header X-Auth-Request-Redirect $scheme://$host$request_uri;\n"
-        "    proxy_pass_request_body off;\n"
-        '    proxy_set_header Content-Length "";\n'
-        "}"
-    )
+    oauth_enabled = "--disable-oauth" not in sys.argv
+    if not oauth_enabled:
+        print("⚠️  [EMERGENCY] OAuth perimeter authentication is DISABLED!")
+        oauth_adv_config = ""
+        pihole_adv_config = "location = / {\n    return 302 /admin/;\n}"
+        n8n_adv_config = ""
+    else:
+        oauth_adv_config = (
+            "auth_request /oauth2/auth;\n"
+            f"error_page 401 = https://auth.{base_domain}/oauth2/sign_in?rd=$scheme://$host$request_uri;\n\n"
+            "location = /oauth2/auth {\n"
+            "    auth_request off;\n"
+            "    proxy_pass http://oauth2-proxy:4180/oauth2/auth;\n"
+            "    proxy_set_header Host $host;\n"
+            "    proxy_set_header X-Real-IP $remote_addr;\n"
+            "    proxy_set_header X-Scheme $scheme;\n"
+            "    proxy_set_header X-Auth-Request-Redirect $scheme://$host$request_uri;\n"
+            "    proxy_pass_request_body off;\n"
+            '    proxy_set_header Content-Length "";\n'
+            "}"
+        )
 
-    pihole_adv_config = (
-        "location = / {\n"
-        "    return 302 /admin/;\n"
-        "}\n\n"
-        + oauth_adv_config
-    )
+        pihole_adv_config = (
+            "location = / {\n"
+            "    return 302 /admin/;\n"
+            "}\n\n"
+            + oauth_adv_config
+        )
 
-    n8n_adv_config = (
-        "location ^~ /webhook/ {\n"
-        "    auth_request off;\n"
-        "    proxy_pass http://n8n:5678;\n"
-        "    proxy_set_header Host $host;\n"
-        "    proxy_set_header X-Real-IP $remote_addr;\n"
-        "    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n"
-        "    proxy_set_header X-Forwarded-Proto $scheme;\n"
-        "}\n"
-        "location ^~ /webhook-test/ {\n"
-        "    auth_request off;\n"
-        "    proxy_pass http://n8n:5678;\n"
-        "    proxy_set_header Host $host;\n"
-        "    proxy_set_header X-Forwarded-Proto $scheme;\n"
-        "}\n\n"
-        + oauth_adv_config
-    )
+        n8n_adv_config = (
+            "location ^~ /webhook/ {\n"
+            "    auth_request off;\n"
+            "    proxy_pass http://n8n:5678;\n"
+            "    proxy_set_header Host $host;\n"
+            "    proxy_set_header X-Real-IP $remote_addr;\n"
+            "    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n"
+            "    proxy_set_header X-Forwarded-Proto $scheme;\n"
+            "}\n"
+            "location ^~ /webhook-test/ {\n"
+            "    auth_request off;\n"
+            "    proxy_pass http://n8n:5678;\n"
+            "    proxy_set_header Host $host;\n"
+            "    proxy_set_header X-Forwarded-Proto $scheme;\n"
+            "}\n\n"
+            + oauth_adv_config
+        )
 
     services = [
       ("auth", "oauth2-proxy", 4180, "http", ""),

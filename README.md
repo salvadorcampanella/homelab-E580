@@ -123,7 +123,8 @@ homelab-e580/
 ├── proxy/                       # 🔒 Nginx Proxy Manager + MariaDB + OAuth2 Proxy
 │   ├── docker-compose.yml
 │   ├── setup-npm-hosts.sh       # Script to configure proxy hosts and Pi-hole DNS via API
-│   └── setup_https_and_301_redirects.py # NPM REST API automation script
+│   ├── setup_https_and_301_redirects.py # NPM REST API automation script
+│   └── emergency-bypass-oauth.sh # SRE Break-glass script to toggle OAuth perimeter
 ├── pihole/                      # 🛡️ DNS + Ad-blocker
 │   └── docker-compose.yml
 ├── portainer/                   # 📦 Visual Docker management
