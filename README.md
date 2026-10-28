@@ -39,11 +39,13 @@ graph TB
                 Lidarr["lidarr · :8686"]
                 Prowlarr["prowlarr · :9696"]
                 Bazarr["bazarr · :6767"]
+                Gluetun["gluetun · PIA VPN 🛡️"]
                 qBit["qbittorrent · :8080"]
                 Jellyfin["jellyfin · :8096 ⚡"]
                 Flare["flaresolverr · :8191"]
                 MeTube["metube · :8081"]
                 MeTubeMusic["metube-music · :8081"]
+                Gluetun -. "VPN network_mode" .-> qBit
             end
 
             subgraph photos["📸 PhotoPrism"]
@@ -164,7 +166,8 @@ homelab-e580/
 | Lidarr | `lidarr` | — | `https://lidarr.salvador512.com` | Google SSO |
 | Prowlarr | `prowlarr` | — | `https://prowlarr.salvador512.com` | Google SSO |
 | Bazarr | `bazarr` | — | `https://bazarr.salvador512.com` | Google SSO |
-| qBittorrent | `qbittorrent` | 6881 (torrents) | `https://qbit.salvador512.com` | Google SSO |
+| Gluetun | `gluetun` | — | PIA VPN Client (Kill-Switch & Port Forwarding) | Internal |
+| qBittorrent | `qbittorrent` | — (via Gluetun) | `https://qbit.salvador512.com` | Google SSO |
 | Jellyfin | `jellyfin` | — | `https://jellyfin.salvador512.com` | App Native (Family) |
 | FlareSolverr | `flaresolverr` | — | Internal (Prowlarr only) | Internal |
 | MeTube | `metube` | — | `https://metube.salvador512.com` | Google SSO |
@@ -358,7 +361,7 @@ docker image prune -f
 
 - **Remote access**: Via Wireguard only (configured on the router).
 - **Private services**: No web service exposes ports to the host except NPM (80, 81, 443).
-- **Necessary exceptions**: Pi-hole (53/DNS) and qBittorrent (6881/torrents).
+- **Necessary exceptions**: Pi-hole (53/DNS). qBittorrent is encapsulated inside Gluetun (PIA VPN with Kill-Switch).
 - **Credentials**: Stored in `.env`, protected by `.gitignore`. Never hardcoded in compose files.
 - **Internal network**: All services communicate through the Docker `proxy-nw` network, invisible from outside.
 

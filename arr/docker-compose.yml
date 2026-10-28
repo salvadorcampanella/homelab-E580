@@ -122,13 +122,45 @@ services:
       - proxy-nw
 
   # -------------------------------------------------------------------
-  # qBittorrent — Download client
-  # Torrents port 6881 exposed to host (necessary for seeding)
+  # Gluetun — VPN Client for PIA (Kill-Switch & Port Forwarding)
+  # qBittorrent routes all its network traffic through this container.
+  # Aliased as 'qbittorrent' on proxy-nw so NPM and *arr continue to reach :8080.
+  # -------------------------------------------------------------------
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - VPN_SERVICE_PROVIDER=private internet access
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=${PIA_USER}
+      - OPENVPN_PASSWORD=${PIA_PASSWORD}
+      - SERVER_REGIONS=${PIA_SERVER_REGIONS:-Spain,France,Netherlands,Switzerland,Germany}
+      - VPN_PORT_FORWARDING=on
+      - VPN_PORT_FORWARDING_STATUS_FILE=/tmp/gluetun/forwarded_port
+      - TZ=${TZ:-Europe/Madrid}
+    volumes:
+      - ${DOCKER_DATA_PATH}/arr/gluetun:/tmp/gluetun
+    networks:
+      proxy-nw:
+        aliases:
+          - qbittorrent
+
+  # -------------------------------------------------------------------
+  # qBittorrent — Download client (routed through Gluetun VPN)
   # -------------------------------------------------------------------
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     restart: unless-stopped
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
     environment:
       - PUID=1000
       - PGID=1000
@@ -137,12 +169,7 @@ services:
     volumes:
       - ${DOCKER_DATA_PATH}/arr/qbittorrent:/config
       - ${DOCKER_DATA_PATH}/arr/downloads:/downloads
-    ports:
-      - "6881:6881/tcp"
-      - "6881:6881/udp"
-      # Web UI NOT exposed to host — accessed via Nginx Proxy Manager
-    networks:
-      - proxy-nw
+      - ${DOCKER_DATA_PATH}/arr/gluetun:/tmp/gluetun:ro
 
   # -------------------------------------------------------------------
   # Jellyfin — Media streaming server

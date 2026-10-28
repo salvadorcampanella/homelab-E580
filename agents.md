@@ -35,7 +35,6 @@ Internet
    ├── port 80   → NPM (HTTP)
    ├── port 81   → NPM (Admin UI)
    ├── port 443  → NPM (HTTPS)
-   ├── port 6881 → qBittorrent (torrents)
    │
    └── [Internal Network: proxy-nw] ──────────────────────┐
        │                                                  │
@@ -46,7 +45,8 @@ Internet
        ├── sonarr              (internal web :8989)       │
        ├── prowlarr            (internal web :9696)       │
        ├── bazarr              (internal web :6767)       │
-       ├── qbittorrent         (internal web :8080)       │
+       ├── gluetun             (PIA VPN + Kill-Switch)    │
+       │   └── qbittorrent     (internal web :8080 via VPN)
        ├── jellyfin            (internal web :8096)       │
        ├── flaresolverr        (internal api :8191)       │
        ├── homepage            (internal web :3000)       │
@@ -143,7 +143,7 @@ casita-dockercompose/
 - `proxy-nw` is **created** by the `proxy/` compose. All other services must declare it as `external: true`.
 - **No web service exposes ports to the host** except NPM (80, 81, 443).
 - Services are accessible **only** through NPM using the container name as internal hostname.
-- **Documented Exceptions**: Pi-hole (53) and qBittorrent (6881). Any other exception must be documented with a comment.
+- **Documented Exceptions**: Pi-hole (53). Any other exception must be documented with a comment. (Note: qBittorrent network traffic is encapsulated within Gluetun VPN; port forwarding is handled through the VPN tunnel, so no host ports are exposed).
 
 ```yaml
 # ✅ CORRECT — in any service other than proxy/
@@ -431,5 +431,4 @@ sudo rm -rf /var/lib/docker/ /var/lib/containerd/
 | 80     | TCP      | NPM HTTP         | ✅ Yes  |
 | 81     | TCP      | NPM Admin UI     | ✅ Yes  |
 | 443    | TCP      | NPM HTTPS        | ✅ Yes  |
-| 6881   | TCP/UDP  | qBittorrent      | ✅ Yes  |
 | Others | TCP      | Web Interfaces   | ❌ No   |
